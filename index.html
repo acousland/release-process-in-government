@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="A working guide to Victorian information release decisions, with a guided assessment and a zoomable decision tree.">
+<title>Release Process in Government</title>
+<link rel="stylesheet" href="./site.css">
+<script src="./app.mjs" type="module"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="top-inner">
+    <a class="brand" href="#assessment" aria-label="Release Process in Government home">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M14 4v7m0 0H6v7m8-7h8v7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="3.5" y="18" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="19.5" y="18" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><circle cx="14" cy="4" r="1.6" fill="currentColor"/></svg></span>
+      <span>Release Process in Government<small>Victoria</small></span>
+    </a>
+    <nav class="top-nav" aria-label="Main navigation">
+      <a href="#assessment" id="assessment-tab">Guided assessment</a>
+      <a href="#tree" id="tree-tab">Decision tree</a>
+      <a href="#reference" id="reference-tab">Legal reference</a>
+    </nav>
+    <span class="top-draft">Working draft</span>
+  </div>
+</header>
+<main id="main" class="shell" tabindex="-1">
+  <section id="assessment-view">
+    <header class="page-heading">
+      <div><p class="eyebrow">GUIDED ASSESSMENT</p><h1>Can we release this information?</h1><p>Answer questions about the request and the information. The assessment will identify which rules may apply.</p></div>
+      <button type="button" id="toggle-path" class="button outline path-toggle" aria-controls="path-panel" aria-expanded="true">Hide decision path</button>
+    </header>
+    <div class="assessment-grid" id="assessment-grid">
+      <section class="card question-card" aria-label="Assessment question">
+        <div id="question" aria-live="polite"></div>
+      </section>
+      <aside class="side-column" aria-label="Assessment path and progress">
+        <section id="path-panel" class="card path-card" aria-label="Live decision path">
+          <div class="path-heading">
+            <div><h2>Your decision path</h2><p>Follows the question you’re answering.</p></div>
+            <a id="open-current-tree" class="text-button" href="#tree">Full tree</a>
+          </div>
+          <div class="path-mode" aria-label="Decision path view">
+            <button type="button" id="path-branch-mode" aria-pressed="true">Current branch</button>
+            <button type="button" id="path-map-mode" aria-pressed="false">Map</button>
+          </div>
+          <div id="live-path" class="live-path" aria-live="polite"></div>
+          <div id="live-map" hidden>
+            <p class="map-status" id="live-map-status" aria-live="polite"></p>
+            <div id="live-map-viewport"></div>
+            <div class="map-inline-tools">
+              <button type="button" id="inline-zoom-out" class="icon-button" aria-label="Zoom out in side-by-side map">−</button>
+              <button type="button" id="inline-zoom-in" class="icon-button" aria-label="Zoom in in side-by-side map">+</button>
+              <button type="button" id="inline-center" class="button outline">Centre on current question</button>
+            </div>
+          </div>
+        </section>
+        <section class="card progress-card">
+          <h2>Assessment progress</h2>
+          <ol id="progress" class="progress"></ol>
+          <p class="side-rule"></p>
+          <button type="button" id="review-toggle" class="text-button" aria-expanded="false" aria-controls="review">Review answers <span id="answer-count" class="count">0</span></button>
+          <div id="review" hidden></div>
+        </section>
+        <aside class="quiet-note">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.7"/><path d="M12 14v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <div><strong>Keep case details out</strong><p>Answers stay in this tab until you copy or download them.</p></div>
+        </aside>
+      </aside>
+    </div>
+  </section>
+  <section id="decision-view" hidden>
+    <header class="page-heading tree-heading">
+      <div><p class="eyebrow">DECISION TREE</p><h1>Follow the release questions</h1><p>The same questions and answers as the assessment. Choose a question to inspect its branches, or return to the form to record an answer.</p></div>
+      <a class="button outline" href="#assessment">Open guided assessment</a>
+    </header>
+    <div class="decision-grid">
+      <section class="card map-card" aria-label="Plain-language decision tree">
+        <div class="map-toolbar">
+          <div class="map-search"><label class="sr-only" for="question-search">Find a question in the tree</label><input id="question-search" type="search" placeholder="Find a question" autocomplete="off" aria-controls="question-search-results"><div id="question-search-results" class="search-results" hidden></div></div>
+          <div class="map-tools" aria-label="Decision tree zoom controls">
+            <button type="button" id="question-zoom-out" class="icon-button" aria-label="Zoom out">−</button>
+            <output id="question-zoom-level" aria-label="Zoom level"></output>
+            <button type="button" id="question-zoom-in" class="icon-button" aria-label="Zoom in">+</button>
+            <button type="button" id="question-fit" class="icon-button fit-button" aria-label="Fit entire decision tree">Fit</button>
+          </div>
+        </div>
+        <div id="question-viewport" class="question-viewport" tabindex="0" aria-label="Decision tree map. Drag or use arrow keys to pan. Use plus or minus to zoom.">
+          <div id="question-board" class="question-board"></div>
+          <div class="map-nav"><button type="button" id="question-start">Start</button><button type="button" id="question-current">Current question</button></div>
+        </div>
+      </section>
+      <aside class="card node-detail" id="question-detail" aria-label="Branch details" aria-live="polite"></aside>
+    </div>
+  </section>
+  <section id="reference-view" hidden>
+    <header class="page-heading tree-heading">
+      <div><p class="eyebrow">LEGAL REFERENCE</p><h1>Explore the supporting rules</h1><p>Search by Act, section, scheme, or keyword. Some source guidance is specific to particular Victorian departments or roles.</p></div>
+      <a class="button outline" href="#assessment">Open guided assessment</a>
+    </header>
+    <section class="card map-card" aria-label="Zoomable decision tree">
+      <div class="map-toolbar">
+        <div class="map-search"><label class="sr-only" for="tree-search">Find a clause or question</label><input id="tree-search" type="search" placeholder="Find a clause or question" autocomplete="off" aria-controls="search-results"><div id="search-results" class="search-results" hidden></div></div>
+        <div class="map-tools" aria-label="Zoom controls">
+          <button type="button" id="zoom-out" class="icon-button" aria-label="Zoom out">−</button>
+          <output id="zoom-level" aria-label="Zoom level"></output>
+          <button type="button" id="zoom-in" class="icon-button" aria-label="Zoom in">+</button>
+          <button type="button" id="zoom-fit" class="icon-button fit-button" aria-label="Fit entire tree">Fit</button>
+        </div>
+      </div>
+      <div id="viewport" tabindex="0" aria-label="Decision tree. Use arrow keys to pan and plus or minus to zoom.">
+        <div id="board"></div>
+        <div id="map-nav" class="map-nav" aria-label="Jump to pathway"></div>
+      </div>
+    </section>
+  </section>
+</main>
+<footer class="shell footer"><p>Working decision aid based on Victorian rules checked 20 November 2026.</p><a href="#reference">Legal reference</a></footer>
+<noscript><div class="shell">JavaScript is needed for the guided assessment and map controls. <a href="./decision-tree.pdf">Open the underlying legal reference PDF</a>.</div></noscript>
+</body>
+</html>
