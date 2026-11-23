@@ -1,5 +1,5 @@
-import {ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
-import {hasPersonal,hasHealth,isCdoRequest,identify} from './release-rules.mjs?v=20261123-departments';
+import {legalConditions} from './legal-conditions.mjs?v=20261123-logic';
+import {hasPersonal,hasHealth,isCdoRequest,identify} from './release-rules.mjs?v=20261123-logic';
 
 // Evaluate from the current answers every time, so Back and Start again restore candidates.
 // A ruled-out disclosure pathway does not remove other duties under the same Act.
@@ -44,6 +44,11 @@ export function evaluatePathways(a={}) {
   else if(a.linkage==='yes'&&a.linkageRecipient==='yes')integration=relevant('Identifiable-data integration and recipient eligibility were confirmed. This route does not require a CDO request.','linkage','linkageRecipient');
   else if(picked(a,['service','publish','enforcement','unlawful','intelligence','claim','placement','health-services']))integration=out('Your selected purpose is operational delivery, publication, or another specific activity, rather than integration to inform policy, service planning, or design.','purpose');
   if(a.linkageRecipient==='unsure')integration=check('Recipient eligibility is unresolved. Keep this route open for verification.','linkageRecipient');
+  const logic=legalConditions(a);
+  const fromRule=(rule,fallback)=>rule.state===true?relevant('All implemented factual conditions for this route were answered. Decision-maker and source restrictions still apply.'):rule.state===false?out('A required condition for this route failed.'):fallback.status==='excluded'?fallback:check('Required factual conditions remain unconfirmed.');
+  if(isCdoRequest(a))cdo=fromRule(logic.cdo,cdo);
+  if(a.linkage==='yes')integration=fromRule(logic.integration,integration);
+  cdo.conditions=logic.cdo.conditions;integration.conditions=logic.integration.conditions;
   const branches=[{label:'CDO request · ss 8–9',...cdo},{label:'Identifiable-data integration · s 15(2)',...integration}];
   const vds=branches.every(b=>b.status==='excluded')?out('Both routes considered by this tool are ruled out for the stated release. This does not remove restrictions on data previously received under the Act.',...cdo.evidence,...integration.evidence):
     branches.some(b=>b.status==='relevant')?relevant('At least one statutory route remains relevant. Check the notice, source restrictions, and responsible officer.'):branches.some(b=>b.status==='check')?check('A statutory route needs further verification.'):open();
@@ -83,7 +88,7 @@ export function evaluatePathways(a={}) {
   add('adoption','Adoption Act 1984 · adoption-record access','Disclosure pathways',a.request==='adoption'?relevant('You identified an adoption-record request. Use the specialist access process.','request'):known(a,'request')?out('This was not identified as an adoption-record access request. Restrictions on adoption information may still apply.','request'):open(),['S9']);
   add('agency','Underlying agency function and legal authority','Disclosure pathways',
     a.departmentWork==='no'?out('You said sharing is not part of a function your agency is responsible for.','departmentWork'):
-    a.departmentWork==='yes'?(ordinaryAuthorityComplete(a)&&a.authorityCheck==='yes'?relevant('You recorded the actual function, legal authority, and authorised role, and confirmed the responsible team’s check. Any separate privacy ground and release approval are still needed.','authorityCheck'):check('The agency function alone does not establish disclosure authority. Record and verify the actual legal basis and authorised role. A department establishment order or General Order is insufficient.','departmentWork')):open(),['I4','R1']);
+    a.departmentWork==='yes'?check('The agency function is identified. The responsible team must confirm the underlying authority and authorised decision-maker.','departmentWork'):open(),['I4','R1']);
 
   add('vps','Victorian Public Sector Data Sharing Policy','Frameworks and safeguards',
     known(a,'audience')&&a.audience!=='government'?out('The proposed recipient is not another Victorian government body.','audience'):
@@ -104,8 +109,13 @@ export function evaluatePathways(a={}) {
   }
   add('security','Information security classification and handling','Frameworks and safeguards',
     Object.keys(a).length?check(a.safeVersion==='yes'?'You confirmed general safe handling. The tool has not verified the agency’s actual classification or rating and its required controls.':'Confirm the agency’s security classification or rating, permitted recipients, and delivery controls. This check can apply to non-identifying data.','safeVersion'):open(),['R4']);
-  add('charter','Charter of Human Rights and Responsibilities Act 2006','Frameworks and safeguards',Object.keys(a).length?check('Consider relevant rights and compatibility before deciding. The current form does not perform a separate Charter assessment.'):open(),['R4']);
+  add('charter','Charter of Human Rights and Responsibilities Act 2006','Frameworks and safeguards',a.rightsCheck==='yes'?relevant('You confirmed the decision-maker considered the relevant rights and compatibility. Retain that assessment.','rightsCheck'):Object.keys(a).length?check('The decision-maker must consider the relevant rights and compatibility.','rightsCheck'):open(),['R4']);
   add('records','Public Records Act 1973 · decision records','Frameworks and safeguards',Object.keys(a).length?relevant('Retain the decision, version, authority, recipient, purpose, and supporting evidence through the agency’s recordkeeping process.'):open(),['R5','D5']);
+  const selected={child:'ciss',family:'fviss',placement:'cyfa',protection:'cyfa',youth:'youth',regulator:'regulator',housing:'housing'}[a.purpose];
+  if(selected){
+    const item=items.find(i=>i.id===selected),rule=logic[a.purpose];
+    Object.assign(item,fromRule(rule,item),{conditions:rule.conditions});
+  }
   return items;
 }
 

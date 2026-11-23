@@ -1,10 +1,10 @@
-import {setupDepartments} from './department-ui.mjs?v=20261123-departments';
-import {departmentRecord,ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
-import tree from './tree-data.mjs?v=20261123-departments';
-import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs?v=20261123-departments';
-import { releaseDetails } from './release-rules.mjs?v=20261123-departments';
-import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs?v=20261123-departments';
-import { evaluatePathways, statusLabels } from './pathway-tracker.mjs?v=20261123-departments';
+import {setupDepartments} from './department-ui.mjs?v=20261123-logic';
+import {departmentRecord} from './department-data.mjs?v=20261123-logic';
+import tree from './tree-data.mjs?v=20261123-logic';
+import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs?v=20261123-logic';
+import { releaseDetails } from './release-rules.mjs?v=20261123-logic';
+import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs?v=20261123-logic';
+import { evaluatePathways, statusLabels } from './pathway-tracker.mjs?v=20261123-logic';
 
 const get = id => document.getElementById(id);
 const element = (tag, className, text) => {
@@ -74,6 +74,11 @@ function syncPath(selection=null) {
   drawLivePath(pathFrame(selection));
   renderPathways(selection);
 }
+function renderConditions(conditions) {
+  const list=element('ul','legal-conditions');
+  for(const c of conditions) list.append(element('li',null,`${c.value===true?'Met':c.value===false?'Failed':'Unconfirmed'} · ${c.label} (${c.reference})`));
+  return list;
+}
 function renderPathways(selection=null) {
   const answers=getAnswers();
   const preview=selection!=null&&getStep(activeStep,answers)!=null;
@@ -102,6 +107,7 @@ function renderPathways(selection=null) {
         for(const branch of item.branches) {
           const branchRow=element('li','pathway-'+branch.status);
           branchRow.append(element('strong','pathway-name',branch.label),element('span','pathway-branch-status',statusLabels[branch.status]),element('p','pathway-reason',branch.reason));
+          if(branch.conditions)branchRow.append(renderConditions(branch.conditions));
           branches.append(branchRow);
         }
         row.append(branches);
@@ -118,6 +124,7 @@ function renderPathways(selection=null) {
       if(evidence.childElementCount)row.append(evidence);
       const refs=element('div','pathway-refs');
       for(const ref of item.refs)refs.append(jump(ref,ref,'ref-link'));
+      if(item.conditions)row.append(renderConditions(item.conditions));
       row.append(refs);
       rows.append(row);
     }
@@ -272,7 +279,8 @@ function recordText(outcome) {
   parts.push('Legislation and framework assessment');
   for(const item of evaluatePathways(getAnswers())) {
     parts.push(`${item.label} · ${statusLabels[item.status]}`,item.reason);
-    for(const branch of item.branches)parts.push(`  ${branch.label} · ${statusLabels[branch.status]}`,`  ${branch.reason}`);
+    for(const branch of item.branches){parts.push(`  ${branch.label} · ${statusLabels[branch.status]}`,`  ${branch.reason}`);for(const c of branch.conditions??[])parts.push(`${c.value===true?'Met':c.value===false?'Failed':'Unconfirmed'} · ${c.label} · ${c.reference}`);}
+    for(const c of item.conditions??[])parts.push(`${c.value===true?'Met':c.value===false?'Failed':'Unconfirmed'} · ${c.label} · ${c.reference}`);
   }
   parts.push('','Ruled out means the assessed pathway is not supported for this release. Other duties under the same Act may remain.','Answers');
   trail.forEach((item,i)=>{
@@ -303,7 +311,6 @@ function focusHeading(title,move) {
 }
 function renderAssessment(move=false) {
   question.replaceChildren();
-  get('authority-register').hidden=!['authorityCheck'].includes(activeStep);
   const st=getQuestion(activeStep);
   if (!st) {
     const out=result(activeStep,getAnswers());
@@ -622,13 +629,7 @@ window.addEventListener('hashchange',hashRoute);
 departmentUI=setupDepartments({getAnswers,onChange:(key,value)=>{
   departmentAnswers[key]=value;
   if(key==='department') {resetAssessment();return;}
-  if(key!=='authorityVerified'){
-    departmentAnswers.authorityVerified='no';get('authority-verified').checked=false;
-  }
-  // An authority edit invalidates any later approval and its recorded check.
-  const checkIndex=trail.findIndex(entry=>entry.step==='authorityCheck');
-  if(checkIndex>=0){activeStep='authorityCheck';previousChoice=null;trail.splice(checkIndex);renderAssessment();}
-  else {syncPath();}
+  syncPath();
 }});
 renderAssessment();
 hashRoute();

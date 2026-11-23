@@ -26,15 +26,11 @@ export const departments=[
  {id:'dtf',short:'DTF',name:'Department of Treasury and Finance',instruments:[{title:'Treasury and Finance establishment and naming (archival citations)',authority:'Historical enabling provision not verified from the original instruments. Do not attribute a 1995 establishment to the 2004 Act.',made:'1995',effective:'31 March 1995 (merger), 6 June 1995 (current title)',citation:'Gazette G 12, 30 March 1995, p 752; Gazette G 22, 8 June 1995, p 1390',url:'https://researchdata.edu.au/department-treasury-finance/491088',effect:'PROV records the merger of the Departments of the Treasury and Finance, initially named Department of the Treasury and Finance, and the later adoption of the current title.',verification:'PROV archival description located. Original establishment and naming instruments not independently inspected.'}],portfolios:['Treasurer','Finance','Industrial Relations','WorkSafe and the TAC'],context:'https://www.dtf.vic.gov.au/legislation'},
 ];
 export const getDepartment=id=>departments.find(d=>d.id===id);
-export const ordinaryAuthorityComplete=a=>Boolean(a.authorityCheck==='yes'&&a.authorityVerified==='yes'&&(getDepartment(a.department)||a.department==='other')&&a.authorityFunction?.trim()&&a.authorityBasis?.trim()&&a.authorityRole?.trim());
 export function departmentRecord(a={}) {
  const d=getDepartment(a.department);
  return [d?`${d.name} (${d.short})`:a.department==='other'?'Other Victorian department or body':'Department not selected',
   ...(d?d.instruments.flatMap(i=>[i.title,i.authority,`Made: ${i.made}. Effective: ${i.effective}.`,i.citation,i.effect,i.verification,i.url]):[]),
   `Current portfolio allocation source: General Order effective ${generalOrder.date}. ${generalOrder.url}`,
   'Establishment and portfolio allocation do not themselves authorise this disclosure.',
-  `Function: ${a.authorityFunction?.trim()||'Not recorded'}`,
-  `Exact Act/provision or other legal capacity: ${a.authorityBasis?.trim()||'Not recorded'}`,
-  `Authorised role, delegation/authorisation, entry, scope, and conditions: ${a.authorityRole?.trim()||'Not recorded'}`,
-  `Underlying authority checked: ${ordinaryAuthorityComplete(a)?'User records a completed authority check':'Not established'}`];
+  'Any authority for the underlying function and the authorised decision-maker must be confirmed by the responsible team where the assessment has not identified a statutory route.'];
 }

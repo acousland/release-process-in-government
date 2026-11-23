@@ -1,5 +1,5 @@
-import {ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
-import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs?v=20261123-departments';
+import {legalConditions,selectedLegalRoute} from './legal-conditions.mjs?v=20261123-logic';
+import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs?v=20261123-logic';
 
 export const stages=['Request','Information','Safeguards','Decision'];
 export const firstStep='audience';
@@ -59,7 +59,7 @@ function definitionOfPurpose(a) {
 
 export const steps={
   audience:options(Q,'Who would receive the information?','Choose the audience for this particular release. You’ll answer questions about the facts, and the result will identify the relevant rules.',[
-    choice('government','Another Victorian government body','A Victorian department, agency, or statutory body.','context'),
+    choice('government','Another Victorian government body','A Victorian department, agency, or statutory body.',a=>a.department==='other'?'sharingBody':'context'),
     choice('person','A person or their representative','For example, a client, parent, carer, or someone asking for a record.','context'),
     choice('public','Anyone, through publication','For example, a website, dashboard, report, or open data portal.','context'),
     choice('other','Another organisation or provider','For example, a contractor, researcher, service provider, or interstate body.','context'),
@@ -91,11 +91,19 @@ export const steps={
   ]),
   noticeReviewed:ask(Q,'Has the responsible team confirmed what the document requires?','Check for an existing written confirmation of the exact information to produce, where to send it, and when it is due.','information','notice-reviewed-pending','notice-reviewed-pending'),
   cdoRequest:ask(Q,'Does the request identify the Victorian Chief Data Officer as the requester?','Check the sender, request letter, and attachments. An ordinary agency email or a request under the VPS Data Sharing Policy is different. Non-identifying data can also be requested by the Chief Data Officer.','cdoWriting','purpose','cdo-review'),
-  cdoWriting:ask(Q,'Does the written request say what data is needed, why, and how it will be handled?','Check whether it is addressed to your agency’s head or responsible officer. Record when it arrived so the statutory response period can be managed.','cdoPurpose','cdo-review','cdo-review'),
+  cdoWriting:ask(Q,'Does the written request say what data is needed, why, and how it will be handled?','Check the notice is addressed to your agency’s head or responsible officer, concerns data the agency holds, and directs provision to the Chief Data Officer. Record when it arrived so the statutory response period can be managed.','cdoPurpose','cdo-review','cdo-review'),
   cdoPurpose:ask(Q,'Will the data inform government policy making, service planning, or design?','For example, analyse demand or design future services. Delivering a service to an individual, or carrying out an individual enforcement action, is a different purpose.','cdoRestricted','cdo-review','cdo-review'),
   cdoRestricted:ask(I,'Could the data reveal a protected source, witness, or investigation method?','Also consider whether disclosure could prejudice national security. Give the responsible officer enough time to respond.','cdo-restricted','information','cdo-review'),
   linkage:ask(I,'Will the receiving team combine or collate two or more datasets for government policy, service planning, or design?','For example, match records about the same people to understand service needs. Identifiable data are for integration. Later analysis and release of results have separate safeguards.','linkageRecipient',a=>a.purpose==='linkage'?'ordinary-alternative':'original','refer'),
-  linkageRecipient:ask(I,'Has the responsible team confirmed that this recipient can receive identifiable data for this integration project?','Use an existing written check naming the legal recipient. Under the Victorian Data Sharing Act, this must be a department Secretary or a body or person prescribed as a data analytics body. Another Victorian government body does not automatically qualify.',policyCheck,'ordinary-alternative','refer'),
+  sharingBody:options(Q,'What kind of organisation is making this release?','Use the organisation’s established status. If uncertain, leave it open for the sharing team to confirm.',[
+    choice('sharing','A Victorian department, administrative office, public entity, or Victoria Police','','context'),
+    choice('designated','A court, tribunal, or independent oversight body','','context'),
+    choice('other','Another kind of organisation','','context'),unsure('context'),
+  ]),
+  linkageRecipient:ask(I,'Has the responsible team confirmed that this recipient can receive identifiable data for this integration project?','Ask the receiving team who is legally receiving the data. Under the Victorian Data Sharing Act, this must be a department Secretary or a body or person prescribed as a data analytics body. Another Victorian government body does not automatically qualify.','integrationControls','ordinary-alternative','refer'),
+  integrationControls:ask(I,'Will names and identifiers be used only to combine records, with protected analysis and safe results?','The receiving team must take reasonable steps to prevent identification before analytics, release only de-identified results, and maintain privacy and security safeguards.',policyCheck,'safety-hold','refer'),
+  schemeRoles:ask(I,'Are these services approved to share this kind of information with each other?','Check the existing participant list or ask your sharing team. For a child or caregiver receiving information directly, check your own service’s role. An initial family violence risk assessment must go to an approved risk assessment service. You do not need to identify the legislation.','schemeClear','scheme-ineligible','refer'),
+  schemeClear:ask(I,'Has the information passed the child or family violence sharing exclusion screen?','Ask the sharing team to screen protected sources, privileged material, court restrictions, investigations, and risks to safety. This question concerns the scheme’s exclusions.','information','source-hold','refer'),
   childRecipient:options(Q,'Who would receive the information about the child?','Choose the recipient for this disclosure.',[
     choice('org','A service or another organisation working with children','For example, a school or support service.','childRequest'),
     choice('direct','The child or someone responsible for or living with them','The purpose is to manage a risk to the child’s safety.','childAction'),
@@ -103,14 +111,14 @@ export const steps={
     unsure(),
   ]),
   childRequest:ask(Q,'Did the other organisation ask for the information to help a child or group of children?','Choose No if the agency is considering sharing on its own initiative.','childAction','childAction'),
-  childAction:ask(Q,'Would sharing help with the child’s wellbeing or safety?','For an organisation, check whether sharing may help it make a decision or plan, investigate, provide services, or manage a risk. If sharing directly with a child or caregiver, it must be to manage a risk to the child’s safety.','information','scheme-ineligible'),
+  childAction:ask(Q,'Would sharing help with the child’s wellbeing or safety?','For an organisation, check whether sharing may help it make a decision or plan, investigate, provide services, or manage a risk. If sharing directly with a child or caregiver, it must be to manage a risk to the child’s safety.','schemeRoles','scheme-ineligible'),
   familyRecipient:options(Q,'Who would receive the family violence information?','Choose the person or organisation receiving this release.',[
     choice('org','An organisation assessing or managing the risk','For example, a service or a specialist risk assessment team.','familyPurpose'),
     choice('direct','The person at risk, or an eligible parent of a child at risk','It would help them manage their risk.','familyDirect'),
     choice('other','A different recipient','The recipient does not fit either description.','ordinary-alternative'),
     unsure(),
   ]),
-  familyDirect:ask(Q,'Is it about the person posing the risk and needed to help the recipient stay safe?','If the recipient is a parent of the child at risk, confirm they are not the person of concern in relation to that child.','information','scheme-ineligible'),
+  familyDirect:ask(Q,'Is it about the person posing the risk and needed to help the recipient stay safe?','If the recipient is a parent of the child at risk, confirm they are not the person of concern in relation to that child.','schemeRoles','scheme-ineligible'),
   familyPurpose:options(Q,'Is the recipient establishing the risk or managing it?','An initial assessment establishes risk. Ongoing assessment can be part of managing a known risk.',[
     choice('assessment','Establish or initially assess the risk','','familyRequest'),
     choice('protection','Manage an existing risk, including ongoing assessment','','familyRequest'),
@@ -119,29 +127,32 @@ export const steps={
   familyRequest:ask(Q,'Did the other organisation ask for the information for that purpose?','Choose No if the agency is considering sharing on its own initiative.','familyNeed','familyNeed'),
   familyNeed:ask(Q,'Would this information support that work on family violence risk?','For an organisation asking for material to manage an existing risk, consider whether the agency reasonably believes the disclosure is necessary for that purpose.','familyWhose','scheme-ineligible'),
   familyWhose:options(I,'Whose information would be shared?','Consider everyone described in the material, including people mentioned alongside the person at risk.',[
-    choice('poses','Only a person who poses, or is alleged to pose, the risk','','information'),
-    choice('child','A child at risk, including adult information connected to managing or assessing that child’s risk','Verify the connection for each adult whose information is included.','information'),
+    choice('poses','Only a person who poses, or is alleged to pose, the risk','','schemeRoles'),
+    choice('child','A child at risk, including adult information connected to managing or assessing that child’s risk','Verify that the assessment is for, or relates to, a family violence protection purpose for that child.','schemeRoles'),
     choice('adult','An adult at risk or another person connected to the situation','This includes information about a connected third party.','familyConsent'),
     choice('mixed','A mix of people and the parts cannot readily be assessed separately','The decision-maker needs to check whose information can be shared.','family-mixed'),
     unsure(),
   ]),
   familyConsent:options(I,'Has each adult at risk or other connected person agreed to this sharing?','Agreement should be informed, current, and cover this recipient and purpose. If there is no consent, a serious threat may still be relevant.',[
-    choice('yes','Yes, everyone whose agreement is needed has agreed','','information'),
+    choice('yes','Yes, everyone whose agreement is needed has agreed','','schemeRoles'),
     choice('no','No, or consent cannot safely be sought','','familyThreat'),
     unsure(),
   ]),
-  familyThreat:ask(I,'Is sharing necessary to lessen or prevent a serious threat to someone?','Consider the person’s life, health, safety, or welfare. Record the evidence for a reasonable belief that this disclosure is necessary.','information','scheme-ineligible'),
-  placement:ask(Q,'Does the requested information help the carer decide or care for the child?','Before placement, consider information reasonably needed to decide whether to accept the placement. After placement, consider known medical information needed to provide appropriate care.','information','special-review'),
-  protection:ask(Q,'Is the disclosure needed to carry out a specific child protection job?','Confirm it is for a particular function, duty, or power of the Secretary or a protective intervener, and the recipient’s role is known.','information','special-review'),
-  youth:ask(Q,'Is sharing needed for the recipient to do their youth justice work?','For example, an official Youth Justice function or eligible case management, planning, or service delivery.','information','special-review'),
-  regulator:ask(Q,'Is the material needed by the Social Services Regulator?','It should help the Regulator perform its functions, or be necessary to decide whether further information may lawfully be supplied.','information','special-review'),
+  familyThreat:ask(I,'Is sharing necessary to lessen or prevent a serious threat to someone?','Consider the person’s life, health, safety, or welfare. Record the evidence for a reasonable belief that this disclosure is necessary.','schemeRoles','scheme-ineligible'),
+  placement:ask(Q,'Does the requested information help the carer decide or care for the child?','The Secretary or out-of-home care service provider is placing or has placed the child with a person other than a parent. Before placement, consider information reasonably needed to decide whether to accept the placement. After placement, consider known medical information needed to provide appropriate care.','information','special-review'),
+  protection:ask(Q,'Is the disclosure needed to carry out a specific child protection job?','Confirm it is for a particular function, duty, or power of the Secretary or a protective intervener, and the recipient’s role is known.','protectionRole','special-review'),
+  protectionRole:options(Q,'Who is sharing or asking for the child protection information?','Use the sender and request details. The tool will identify the relevant provision.',[choice('official','The Secretary or a protective intervener is making the disclosure','','information'),choice('response','We are responding to a request from the Secretary or a protective intervener','','information'),choice('other','Neither of these','','special-review'),unsure('special-review')]),
+  youth:ask(Q,'Is sharing needed for the recipient to do their youth justice work?','For example, an official Youth Justice function or eligible case management, planning, or service delivery.','youthRoles','special-review'),
+  youthRoles:ask(Q,'Have the youth justice team confirmed the sender’s role, recipient’s role, and whether this is a request?','The team can check the relevant official, information-holder, panel, or service roles against the particular function. You do not need to choose a section.','information','special-review','special-review'),
+  regulator:ask(Q,'Is the material needed by the Social Services Regulator?','It should help the Regulator perform its functions, or be necessary to decide whether further information may lawfully be supplied.','regulatorRoles','special-review'),
+  regulatorRoles:ask(Q,'Has the regulator’s team confirmed your organisation can provide this information to it?','Confirm the actual sending organisation, the Regulator as recipient, and that the information is held by your organisation.','information','special-review','special-review'),
   housingParties:ask(Q,'Are the two parties involved in delivering or administering the relevant social housing service?','For example, Homes Victoria and a participating registered agency or designated provider. Confirm the exact organisations and their roles.','housingRegister','special-review'),
   housingRegister:ask(Q,'Is the disclosure to establish, administer, or correct the housing register?','Choose No for a request about eligibility, priority, allocation, housing needs, tenancy management, reporting, or another operational housing function.','housingAuthorised','housingNeed'),
-  housingAuthorised:ask(Q,'Is the person making the disclosure authorised to access the register for that work?','Check written authorisation under the Housing Act 1983 (Vic), s 142G(2), and permitted access purposes under s 142H. Section 142J(2) sets out when the information can be shared for register work.','information','special-review'),
-  housingNeed:ask(Q,'Is this information needed for that housing task?','Confirm the recipient is doing the specific housing job and genuinely needs the fields proposed for release.','information','special-review'),
+  housingAuthorised:ask(Q,'Is the person making the disclosure authorised to access the register for that work?','Check written authorisation under the Housing Act 1983 (Vic), s 142G(2), and permitted access purposes under s 142H. Section 142J(2) sets out when the information can be shared for register work.','housingNeed','special-review'),
+  housingNeed:ask(Q,'Is this information needed for that housing task?','The information must concern an applicant or their household, their social housing application, or the adequacy of current or future housing. Confirm the recipient needs these fields for the selected task, including register work.','information','special-review'),
   information:options(I,'Could someone work out who the information is about?','Think about what the recipient already knows or can access. Removing names may still leave identifying combinations, small counts, dates, or free text.',[
-    choice('anonymous','No, nobody can reasonably be identified','For example, an aggregate table that has been checked for small counts and linkage risk.',afterInformation),
-    choice('personal','Yes, it identifies living people and contains no health information','For example, names, contact details, individual case fields, or details that can reasonably identify someone.',afterInformation),
+    choice('anonymous','No, nobody can reasonably be identified and there are no person-level identifiers','For example, an aggregate table that has been checked for small counts and linkage risk.',afterInformation),
+    choice('personal','Yes, it identifies living people, or contains person-level codes, and has no health information','Include names, person-level identifiers or unique codes, contact details, and identifying combinations. Removing names alone is insufficient.',afterInformation),
     choice('health','Yes, it identifies people and contains health or disability information','For example, a medical condition, health service, diagnosis, treatment, or disability, without separate non-health personal information.',afterInformation),
     choice('mixed','Yes, it contains both health and other personal information','For example, a file with health details and separate personal case or administrative information.',afterInformation),
     choice('deceased','It identifies only people who have died and contains no health information','The records may still be subject to source or confidentiality restrictions.','refer'),
@@ -161,14 +172,14 @@ export const steps={
   researchConsent:ask(I,'Is it impracticable to ask the people affected to agree?','Record the practical reason it cannot reasonably be done. A preference to skip consent is insufficient.','researchControls','privacy-block'),
   researchControls:ask(I,'Will the recipient keep the identifiable data from being shared further or published?','There must be a reasonable basis to believe the recipient will not pass the information on. Public results must avoid identifying people.','researchExtra','privacy-block'),
   researchHealth:ask(I,'Would non-identifying information be insufficient for the health research or statistics?','Consider whether aggregate or safely de-identified information could serve the research purpose.','ethics','privacy-block'),
-  ethics:ask(I,'Has the research been through the applicable approval and safeguards process?','Look for confirmation from the research governance team, including ethics review where required and controls on handling, onward release, and published results.',afterException,'privacy-block'),
-  threat:ask(I,'Is sharing necessary to lessen or prevent a serious threat?','Consider life, health, safety, or welfare of an individual, or public health, safety, or welfare. Record the facts that make it reasonable to believe sharing is necessary.',afterException,'privacy-block'),
+  ethics:ask(I,'Has the research been through the applicable approval and safeguards process?','The research governance team must confirm compliance with the applicable Health Complaints Commissioner research guidelines, including required review and controls on handling, onward disclosure, and identifiable publication.',afterException,'privacy-block'),
+  threat:ask(I,'Is sharing necessary to lessen or prevent a serious threat?','Consider life, health, safety, or welfare of an individual, or public health, safety, or welfare. Record the facts that make it reasonable to believe sharing is necessary.',a=>hasHealth(a)?'healthThreatGuidelines':afterException(a),'privacy-block'),
+  healthThreatGuidelines:ask(I,'Has the health information team confirmed the emergency sharing safeguards?','Ask the team to confirm any applicable Health Complaints Commissioner guidelines for this serious-threat disclosure.',afterException,'privacy-block','refer'),
   unlawful:ask(I,'Does the agency have reason to suspect unlawful activity and need to share to investigate or report it?','Check the disclosure is a necessary part of the investigation or report to someone relevant, and record the facts that support it.',enforcementNext,'privacy-block'),
   enforcement:ask(I,'Does a law enforcement agency need this information for a specific enforcement task?','For example, investigating an offence, enforcing criminal proceeds laws, protecting public revenue, addressing serious misconduct, or conducting court proceedings. Confirm the agency reasonably believes the disclosure is reasonably necessary for the specified task.',enforcementNext,'privacy-block'),
   healthconfidence:ask(I,'If a registered health practitioner is making the disclosure, can they do so without breaching confidence?','Answer Yes if this additional condition is satisfied or the discloser is not a registered health practitioner.',afterException,'privacy-block'),
   claim:ask(I,'Is this information necessary to establish, exercise, or defend the specific legal claim?','Confirm the claim and why this exact information is needed. A separate basis may be required for personal information outside the health information.',afterException,'privacy-block'),
-  departmentWork:ask(I,'Is this sharing part of a job your agency is responsible for?','For example, delivering a funded service, reporting on results, or doing work assigned to your agency. A department’s establishment order does not by itself authorise the release.','authorityCheck','function-review','function-review'),
-  authorityCheck:ask(I,'Has the underlying authority for this activity and disclosure been identified and checked?','Complete the authority record above with the actual function, exact Act and provision or other legal capacity, and the authorised role and instrument. A department name, portfolio allocation, or yes answer alone is insufficient.',a=>ordinaryAuthorityComplete(a)?policyCheck(a):'function-review','function-review','function-review'),
+  departmentWork:ask(I,'Is this sharing part of a job your agency is responsible for?','For example, delivering a funded service, reporting on results, or doing work assigned to your agency. A department’s establishment order does not by itself authorise the release.',policyCheck,'function-review','function-review'),
   healthReason:options(I,'Why is the health information needed?', 'Choose the situation that best matches the actual disclosure.',[
     choice('management','Management, funding, planning, monitoring, evaluation, or qualifying staff training','This is about health services, or training provided by a health service provider to staff or people working with it.','healthServiceData'),
     choice('provider','Provide necessary care when the person cannot agree','The health service provider is currently providing care to the person.','provider'),
@@ -207,7 +218,8 @@ export const steps={
   limitsResolved:ask(S,'Has the team responsible for that restriction confirmed this version can be shared?','Use a written decision about the exact fields and recipient. If the restriction applies to only some material, narrow the version and assess it again.',nextDestination,'source-hold','source-hold'),
   destination:ask(S,'Will an external recipient outside Victoria receive or access this personal or health information?','Include service providers, remote support and administrators, and access to hosted data. Choose No if the release contains no personal or health information.','transferChecked','safeVersion','transfer-review'),
   transferChecked:ask(S,'Has a privacy reviewer confirmed the transfer can happen and the recipient protects the information?','Check for a written decision covering this recipient, location, exact data, and safeguards.','safeVersion','transfer-review','transfer-review'),
-  safeVersion:ask(S,'Is the version limited to what is needed and ready to send safely?','Confirm the intended recipient or publication channel, only necessary fields, secure delivery or controlled access, and any agreed limits on reuse, linking, or onwards sharing.','approval','safety-hold','safety-hold'),
+  safeVersion:ask(S,'Is the version limited to what is needed and ready to send safely?','Confirm the intended recipient or publication channel, only necessary fields, secure delivery or controlled access, and any agreed limits on reuse, linking, or onwards sharing.','rightsCheck','safety-hold','safety-hold'),
+  rightsCheck:ask(S,'Has the decision-maker considered the people’s rights and the effect of this release?','Consider privacy, family, children, cultural rights, and any other rights affected. The decision-maker must consider the relevant rights and whether this decision is compatible with them.','approval','rights-review','rights-review'),
   approval:options(S,'Has someone with the authority to decide approved this exact release?','Use the Act and provision identified for your release to check who can decide. Confirm the approval covers the exact information, recipient, and purpose.',[
     choice('yes','Yes, I’ve checked their authority and they’ve approved this release','','approved'),
     choice('no','No, approval is still needed','','ready'),
@@ -256,8 +268,9 @@ const messages={
   'privacy-block':['hold','A privacy condition has not been met','Hold the proposed version. The release needs a supported ground for every type of identifiable information, or a lawful narrower version.'],
   'source-hold':['hold','Hold until the source restriction is resolved','Ask the record owner or relevant specialist to confirm the permission in writing, or assess a version that excludes any protected material.'],
   'transfer-review':['refer','Confirm the transfer before release','Ask Privacy to review who will have access outside Victoria, the applicable transfer ground, and the safeguards.'],
-  'function-review':['refer','Confirm why the agency is sharing','Record and verify the actual function, the Act and provision or other legal capacity, and the authorised role and instrument. Department establishment and allocation of portfolio legislation do not themselves establish authority for this disclosure.'],
+  'function-review':['refer','Confirm why the agency is sharing','Your answers identify an agency function, but do not establish a specific statutory disclosure power. Give this assessment to the information owner or legal team to identify the authority and authorised decision-maker. You do not need to supply an Act or section to complete this assessment.'],
   'arrangement-review':['refer','Confirm the sharing arrangements','Ask the information owner to identify any applicable MoU or data sharing agreement and confirm its conditions for this exact release. An agreement does not replace the legal basis.'],
+  'rights-review':['refer','Have the rights impacts considered','Give the decision-maker the proposed version, recipient, purpose, and likely impacts on people. Complete the rights assessment before release.'],
   'safety-hold':['hold','Hold until the release is ready to send safely','Limit the version to what is needed and confirm the recipient, delivery channel, and safeguards.'],
 };
 
@@ -268,7 +281,12 @@ export function result(id,a) {
   const must= a.request==='order'||a.purpose==='placement'||
     (a.purpose==='child'&&a.childRecipient==='org'&&a.childRequest==='yes')||
     (a.purpose==='family'&&a.familyRecipient==='org'&&a.familyRequest==='yes');
-  if (['approved','ready'].includes(id)&&release.departmentFunction&&!release.authorityConfirmed) id='function-review';
+  if (['approved','ready'].includes(id)) {
+    if(isCdoRequest(a)&&legalConditions(a).cdo.state!==true)id='refer';
+    const route=selectedLegalRoute(a);
+    if (route&&legalConditions(a)[route].state!==true) id='refer';
+    if (release.departmentFunction) id='function-review';
+  }
   if (!['approved','ready'].includes(id)) {
     const [type,title,description]=messages[id]??messages.refer;
     return {type,title,description,findings,release};

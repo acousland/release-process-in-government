@@ -1,5 +1,5 @@
-import graph from './question-map-data.mjs?v=20261123-departments';
-import {getStep, nextStep} from './assessment.mjs?v=20261123-departments';
+import graph from './question-map-data.mjs?v=20261123-logic';
+import {getStep, nextStep} from './assessment.mjs?v=20261123-logic';
 
 const get=id=>document.getElementById(id);
 const byId=new Map(graph.nodes.map(node=>[node.id,node]));

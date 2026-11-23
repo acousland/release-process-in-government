@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="A working guide to Victorian information release decisions, with a guided assessment and a zoomable decision tree.">
 <title>Release Process in Government</title>
-<link rel="stylesheet" href="./site.css?v=20261123-departments">
-<script src="./app.mjs?v=20261123-departments" type="module"></script>
+<link rel="stylesheet" href="./site.css?v=20261123-logic">
+<script src="./app.mjs?v=20261123-logic" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -38,15 +38,6 @@
     </section>
     <div class="assessment-grid" id="assessment-grid">
       <section class="card question-card" aria-label="Assessment question">
-        <section id="authority-register" class="authority-register" hidden aria-labelledby="authority-heading">
-          <p class="eyebrow">UNDERLYING AUTHORITY RECORD</p><h2 id="authority-heading">What supports this particular activity?</h2>
-          <p>Establishment and portfolio legislation are starting points. Ask the information owner or legal team to identify the actual function and legal capacity. Keep personal or case details out.</p>
-          <label for="authorityFunction">Function and purpose of this activity</label><textarea id="authorityFunction" rows="2" maxlength="2000" placeholder="For example, the specific service, reporting, or planning function"></textarea>
-          <label for="authorityBasis">Exact Act and provision, or other legal capacity</label><textarea id="authorityBasis" rows="3" maxlength="3000" placeholder="Record the section, legal actor, and how it supports this activity and disclosure. For Crown capacity, record the responsible team’s written advice or existing authority."></textarea>
-          <label for="authorityRole">Authorised role and instrument</label><textarea id="authorityRole" rows="3" maxlength="3000" placeholder="Record the role, delegation or authorisation, entry, scope, conditions, and currency. Do not assume the Secretary’s power belongs to any employee."></textarea>
-          <label class="authority-confirm"><input type="checkbox" id="authority-verified"> The responsible team has checked these references and confirmed that they cover this exact activity and disclosure.</label>
-          <p class="source-note">This records your check. The tool does not verify internal delegations or legal advice.</p>
-        </section>
         <div id="question" aria-live="polite"></div>
       </section>
       <aside class="side-column" id="assessment-side" aria-label="Legislation, frameworks, and assessment progress" tabindex="0">

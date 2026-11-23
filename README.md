@@ -6,7 +6,7 @@ The static website files are in this repository’s root. To publish with GitHub
 
 The guide is a working draft. Legal content was checked on 20 November 2026. Confirm current law and your agency’s delegations before using an outcome for an actual release.
 
-Victorian Data Sharing Act pathways were updated on 23 November 2026. The assessment distinguishes statutory Chief Data Officer requests (including non-identifying data), identifiable-data integration with an eligible data analytics body, and ordinary interagency sharing. It separates policy and service planning from operational delivery, and requires a recorded and checked function, legal authority, and authorised role for the ordinary agency-function route.
+Victorian Data Sharing Act pathways were updated on 23 November 2026. The assessment distinguishes statutory Chief Data Officer requests (including non-identifying data), identifiable-data integration with an eligible data analytics body, and ordinary interagency sharing. It separates policy and service planning from operational delivery, and refers unresolved ordinary departmental authority to the responsible team without requiring users to enter legislation.
 
 Run the assessment and map regression checks with `node --test tests/assessment.test.mjs`.
 
@@ -21,6 +21,8 @@ Department profiles added on 23 November 2026 cover the ten major departments. T
 
 The portfolio index is a title-only navigation aid to the signed General Order effective 23 October 2026. It includes all 60 portfolios, including portfolios with no Act titles listed, and preserves separate entries where a title appears under multiple portfolios. Its 815 title entries represent 626 distinct titles. Each links to the source PDF page. The Order’s full scope notes, footnotes, split provisions, and joint administration must be read in that source. Department starting points are navigation suggestions, not a legal allocation of whole Acts to a department. The index does not evaluate disclosure powers under all those Acts.
 
-Changing the assessment department restarts the questionnaire and clears its authority record. Browsing another department in the authority view does not change assessment answers. Editing an underlying authority invalidates its checked status and any later approval. This tool records the responsible team’s authority check, rather than verifying internal instruments itself.
+Changing the assessment department restarts the questionnaire. Browsing another department in the authority view preserves answers. The questionnaire asks factual questions and identifies the applicable provisions. Users are never required to type an Act or section. Unresolved underlying authority is identified for the responsible team at the outcome.
+
+The legal rules audit and source matrix are in [LEGAL-RULES-REVIEW.md](LEGAL-RULES-REVIEW.md). Shared statutory conditions in `legal-conditions.mjs` drive the tracker, findings, outcome, and exported record. Conditions are met, failed, or unconfirmed. The privacy alternatives are shared through `privacyGrounds`. The audit describes specialist judgments and workflows that remain subject to professional verification. The General Order title index remains a navigation aid, not an executable interpretation of every indexed Act.
 
 Source data lives in `department-data.mjs` and `portfolio-legislation.mjs`. To maintain the title index, extract the signed PDF into ordered `{n, page, text}` records in a temporary `general-order-lines.json`, with zero-based sequential `n` and one-based PDF pages, then run `python3 scripts/build-legislation-index.py`. Review wrapped titles and compare source pages before committing. Do not infer department powers from the title index.

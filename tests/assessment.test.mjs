@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {firstStep,getStep,nextStep,result} from '../assessment.mjs';
 import graph from '../question-map-data.mjs';
 
-const defaults={audience:'government',context:'neither',request:'regular',cdoRequest:'no',purpose:'service',information:'anonymous',departmentWork:'yes',authorityCheck:'yes',govPurpose:'yes',arrangements:'none',limits:'no',safeVersion:'yes',approval:'unsure'};
+const defaults={audience:'government',context:'neither',request:'regular',cdoRequest:'no',purpose:'service',information:'anonymous',departmentWork:'yes',integrationControls:'yes',schemeRoles:'yes',schemeClear:'yes',youthRoles:'yes',regulatorRoles:'yes',govPurpose:'yes',arrangements:'none',limits:'no',safeVersion:'yes',rightsCheck:'yes',approval:'unsure'};
 function assess(overrides={}) {
   const choices={...defaults,...overrides},answers={department:'dffh',authorityFunction:'Test service function',authorityBasis:'Verified test provision',authorityRole:'Verified test delegation entry',authorityVerified:'yes',...Object.fromEntries(Object.entries(choices).filter(([key])=>['department','authorityFunction','authorityBasis','authorityRole','authorityVerified'].includes(key)))},trail=[];
   let current=firstStep;
@@ -23,8 +23,9 @@ const underAct=o=>o.release.bases.some(b=>b.law.startsWith('Victorian Data Shari
 test('ordinary non-identifying sharing requires a recorded and checked underlying authority',()=>{
   const o=assess();
   assert.equal(o.current,'ready');assert.equal(underAct(o),false);
-  assert.match(o.release.departmentBasis,/User-recorded authority/);
-  assert.match(o.findings[0].why,/Non-identifying data can still/);
+  assert.match(o.release.departmentBasis,/responsible team/);
+  assert.equal(o.type,'refer');
+
   assert.ok(o.trail.includes('cdoRequest'));
 });
 for(const request of ['cdo','regular']) test(`non-identifying CDO request uses the Act: ${request}`,()=>{
@@ -51,7 +52,7 @@ for(const linkageRecipient of ['no','unsure']) test(`unconfirmed analytics body 
 });
 test('anonymous combined datasets can use the ordinary function route',()=>{
   const o=assess({purpose:'linkage',approval:'yes'});
-  assert.equal(o.current,'approved');assert.equal(underAct(o),false);
+  assert.equal(o.current,'approved');assert.equal(o.type,'refer');assert.equal(underAct(o),false);
   assert.doesNotMatch(o.title,/statutory/);assert.equal(o.release.departmentFunction,true);
 });
 test('policy analysis without integration still checks ordinary privacy grounds',()=>{
@@ -73,9 +74,21 @@ test('applicable agreements must be checked before release',()=>{
   assert.equal(assess({arrangements:'unsure'}).current,'arrangement-review');
 });
 
-test('department choice and function confirmation alone do not establish release authority',()=>{
-  for(const authorityVerified of ['no',undefined])assert.equal(assess({authorityVerified}).current,'function-review');
-  for(const field of ['department','authorityBasis','authorityFunction','authorityRole'])assert.equal(assess({[field]:''}).current,'function-review');
-  assert.equal(assess({authorityCheck:'unsure'}).current,'function-review');
-  assert.equal(result('approved',{...defaults,department:'dffh'}).title,'Confirm why the agency is sharing');
+test('ordinary route completes without asking the user for legislation',()=>{
+ const o=assess({authorityBasis:undefined,authorityRole:undefined,authorityFunction:undefined,authorityVerified:undefined});
+ assert.equal(o.type,'refer');assert.equal(o.trail.includes('authorityCheck'),false);
+ assert.equal(getStep('authorityCheck'),null);
+});
+
+for(const scenario of [
+ {purpose:'child',childRecipient:'org',childRequest:'no',childAction:'yes',schemeRoles:'yes',schemeClear:'yes'},
+ {purpose:'family',familyRecipient:'org',familyPurpose:'assessment',familyRequest:'no',familyNeed:'yes',familyWhose:'adult',familyConsent:'yes',schemeRoles:'yes',schemeClear:'yes'},
+ {purpose:'protection',protection:'yes',protectionRole:'response'},
+ {purpose:'placement',audience:'person',placement:'yes'},
+ {purpose:'housing',housingParties:'yes',housingRegister:'yes',housingAuthorised:'yes',housingNeed:'yes'},
+ {purpose:'youth',youth:'yes',youthRoles:'yes'},
+ {purpose:'regulator',regulator:'yes',regulatorRoles:'yes'},
+])test(`normal entry evaluates ${scenario.purpose} from facts and matches its map`,()=>{
+ const o=assess({...scenario,approval:'yes'});
+ assert.equal(o.current,'approved');assert.equal(o.type,'release');assert.ok(o.release.bases.length);
 });

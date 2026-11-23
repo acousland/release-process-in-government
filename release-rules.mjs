@@ -1,4 +1,4 @@
-import {ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
+import {legalConditions} from './legal-conditions.mjs?v=20261123-logic';
 const privacyAct='Privacy and Data Protection Act 2014 (Vic)';
 const healthAct='Health Records Act 2001 (Vic)';
 const childScheme='Child Wellbeing and Safety Act 2005 (Vic)';
@@ -35,7 +35,7 @@ export function privacyGrounds(a) {
   }
   if (a.threat==='yes') {
     personal??=ip('Schedule 1, IPP 2.1(d)','The answers indicate a serious threat and a reasonable belief that disclosure is necessary to lessen or prevent it.','Limit the disclosure to the information needed to address the threat.','P5');
-    health??=hp('Schedule 1, HPP 2.2(h)','The answers indicate a serious threat and a reasonable belief that disclosure is necessary to lessen or prevent it.','Apply any applicable Health Complaints Commissioner guidelines and confine the disclosure to the threat.','H4');
+    if(a.healthThreatGuidelines==='yes')health??=hp('Schedule 1, HPP 2.2(h)','The answers indicate a serious threat and a reasonable belief that disclosure is necessary to lessen or prevent it.','Apply any applicable Health Complaints Commissioner guidelines and confine the disclosure to the threat.','H4');
   }
   if (a.unlawful==='yes') {
     personal??=ip('Schedule 1, IPP 2.1(e)','the agency has reason to suspect unlawful activity and disclosure is necessary to investigate it or report it to a relevant person or authority.','Record the reasons for suspicion, necessity, and why the recipient is relevant.','P6');
@@ -75,19 +75,19 @@ export function identify(a) {
     } else {
       results.push({kind:'instrument',law:'Written statutory demand',provision:'Exact Act and provision on the notice',why:'An authorised body may have a power to require the material requested.',verify:'Verify the issuer, power, addressee, scope, any exception, and response deadline. The instrument determines the precise authority.',refs:['S1','S11']});
     }
-    if(hasPersonal(a)) results.push(ip('Schedule 1, IPP 2.1(f)','A verified law requiring or authorising the disclosure can supply the privacy ground.','Confirm the exact requirement and approved scope.','P7'));
-    if(hasHealth(a)) results.push(hp('Schedule 1, HPP 2.2(c)','A verified law requiring, authorising or permitting the disclosure may supply the health privacy ground.','Confirm the exact authority and that the prescribed-law exception is not engaged.','H1'));
+    if(a.noticeReviewed==='yes'&&hasPersonal(a)) results.push(ip('Schedule 1, IPP 2.1(f)','A verified law requiring or authorising the disclosure can supply the privacy ground.','Confirm the exact requirement and approved scope.','P7'));
+    if(a.noticeReviewed==='yes'&&hasHealth(a)) results.push(hp('Schedule 1, HPP 2.2(c)','A verified law requiring, authorising or permitting the disclosure may supply the health privacy ground.','Confirm the exact authority and that the prescribed-law exception is not engaged.','H1'));
   }
-  if (isCdoRequest(a)) add(sharingAct,'ss 5, 8 and 9(2)(a) (providing data in response to an s 8 notice)'+
+  if (legalConditions(a).cdo.state===true) add(sharingAct,(a.sharingBody==='designated'?'ss 5, 8 and 10 (optional response by a designated body)':'ss 5, 8 and 9(2)(a) (providing data in response to an s 8 notice)')+
     (hasPersonal(a)||hasHealth(a)?' and s 15(1) (disclosing identifiable data)':''),
     'A written request from the Victorian Chief Data Officer points to the statutory notice pathway.',
-    'Confirm a valid notice and responsible officer, screen restricted data and any secrecy provisions under ss 20–21, and respond within 10 business days or any agreed longer period. Provide lawful data or written reasons under ss 9 and 14.',['V2','VD1','VD2']);
+    a.sharingBody==='designated'?'Confirm a valid notice and the responsible officer. A designated body may provide the data but is not required to provide it or respond under s 10. Screen restricted data and secrecy under ss 20–21.':'Confirm a valid notice and responsible officer, screen restricted data and secrecy under ss 20–21, and respond within 10 business days or an agreed longer period with lawful data or written reasons under ss 9 and 14.',['V2','VD1','VD2']);
   if (a.request==='adoption') add('Adoption Act 1984 (Vic)','Part VI, including s 100 where applicable','The person is seeking an adoption record or information.','Refer to the Adoption Information Service for identity, applicant role, age, consent, and any court pathway.',['S9']);
   if (a.request==='care') addPolicy('DFFH Care Leavers Access to Records Policy','Dedicated records process','The person is seeking their own out-of-home care history.','Refer to the care records team to verify identity or authority and review reporter protections and third-party information.',['S10']);
   if (a.request==='own') {
     add(foiAct,'s 16(2) or formal access under ss 13 and 17','The person is asking for their own records outside the formal FOI process.','Verify identity or authority and screen third-party material and source restrictions. Use the authorised informal access or formal FOI route.',['A7','FA1','A3']);
   }
-  if (a.purpose==='child') {
+  if (a.purpose==='child'&&legalConditions(a).child.state===true) {
     const mode=a.childRecipient==='direct'?'direct':a.childRecipient==='org'&&a.childRequest==='yes'?'request':a.childRecipient==='org'&&a.childRequest==='no'?'voluntary':'unconfirmed';
     const provision=mode==='direct'?'s 41Y':mode==='request'?'ss 41W(1), 41W(3)–(5)':mode==='voluntary'?'s 41V':'Part 6A (confirm the recipient and way the request was made)';
     add(childScheme,provision,
@@ -95,19 +95,19 @@ export function identify(a) {
       'Confirm the actual entity roles and authorisations, source restrictions, and scheme exclusions. Complete the required record and any written reasons when applicable.',
       mode==='direct'?['C5','C6']:['C1','C2','C3','C4','SP1','SP5']);
   }
-  if (a.purpose==='family') {
+  if (a.purpose==='family'&&legalConditions(a).family.state===true) {
     const direct=a.familyRecipient==='direct', assessment=a.familyPurpose==='assessment', requested=a.familyRequest==='yes';
     const provision=direct?'ss 144M–144MA':a.familyPurpose==null||a.familyPurpose==='unsure'||!['yes','no'].includes(a.familyRequest)?'Part 5A (exact provision depends on purpose and recipient)':
       (assessment?(requested?'ss 144KB–144KC':'s 144KA'):(requested?'ss 144LB–144LC':'s 144LA'))+' and ss 144N–144ND';
     add(familyScheme,provision,direct?'The release is for a person at risk, or an eligible parent, to manage family violence risk.':'The proposed sharing concerns assessing or managing family violence risk. The request and eligible recipient determine whether a duty or permission applies.',
       'Verify the prescribed recipient’s capacity, person categories, consent or exception, safety and exclusions, and required record or written reasons.',['F1','F2','F3','F4','F5','SP2','SP5']);
   }
-  if (a.purpose==='placement') add(childrenAct,'s 179(1)–(2)','The information is needed in connection with placement of a child with a person other than a parent.','Confirm the case and prospective or actual carer. Before placement provide information reasonably necessary for the choice to accept care. After placement provide the known medical status information needed for appropriate care.',['SH4']);
-  if (a.purpose==='protection') add(childrenAct,'s 192(1)','A protective intervener or the Secretary needs the information to perform a child protection function or power.','Confirm the actor and recipient, the reasonable belief that disclosure is required for that function, and applicable reporter protections.',['SH5','S3']);
-  if (a.purpose==='youth') add('Youth Justice Act 2024 (Vic)','Part 15.1, including ss 704(2) and 708 where applicable','The proposed release supports specified youth justice functions or case coordination.','Confirm the actor, recipient, function, and necessity before choosing the exact subsection.',['S5']);
-  if (a.purpose==='regulator') add('Social Services Regulation Act 2021 (Vic)','ss 189 and 193(2)','The proposal concerns giving material to the Social Services Regulator for its functions or to decide whether further information may lawfully be shared.','Confirm the recipient is the Regulator, the agency’s relevant-agency capacity, reasonable satisfaction about the purpose and scope, and any confidentiality notice.',['S6']);
-  if (a.purpose==='housing') add('Housing Act 1983 (Vic)',a.housingRegister==='yes'?'s 142J(2) (housing register disclosure)':a.housingRegister==='no'?'s 142J(1) (social housing disclosure)':'ss 142I–142J (confirm which housing purpose applies)','The request concerns social housing purposes or the Victorian Housing Register.','Confirm both parties’ roles, necessity for the specific purpose, and any register authorisation or preserved statutory prohibition.',['SH1','SH2','SH3']);
-  if (!isCdoRequest(a)&&a.linkage==='yes'&&a.linkageRecipient==='yes'&&(hasPersonal(a)||hasHealth(a))) add(sharingAct,'ss 5 and 15(2) (disclosing identifiable data for integration)','The proposal involves combining identifiable datasets to inform government policy making, service planning, or design. The receiving body’s eligibility has been checked. A Chief Data Officer request is not required for this route.','Verify the written eligibility check and the agency’s responsible officer. Check secrecy, confine identifiers to integration, and check ss 18–19 for de-identification and releasing results.',['V1','V3','V4','V5']);
+  if (a.purpose==='placement'&&legalConditions(a).placement.state===true) add(childrenAct,'s 179(1)–(2)','The information is needed in connection with placement of a child with a person other than a parent.','Confirm the case and prospective or actual carer. Before placement provide information reasonably necessary for the choice to accept care. After placement provide the known medical status information needed for appropriate care.',['SH4']);
+  if (a.purpose==='protection'&&legalConditions(a).protection.state===true) add(childrenAct,a.protectionRole==='response'?'s 192(2)':'s 192(1)','A protective intervener or the Secretary needs the information to perform a child protection function or power.','Confirm the actor and recipient, the reasonable belief that disclosure is required for that function, and applicable reporter protections.',['SH5','S3']);
+  if (a.purpose==='youth'&&legalConditions(a).youth.state===true) add('Youth Justice Act 2024 (Vic)','Part 15.1, including ss 704(2), 705 and 708, according to the checked roles and request','The proposed release supports specified youth justice functions or case coordination.','Confirm the actor, recipient, function, and necessity before choosing the exact subsection.',['S5']);
+  if (a.purpose==='regulator'&&legalConditions(a).regulator.state===true) add('Social Services Regulation Act 2021 (Vic)','ss 189 and 193(2)','The proposal concerns giving material to the Social Services Regulator for its functions or to decide whether further information may lawfully be shared.','Confirm the recipient is the Regulator, the agency’s relevant-agency capacity, reasonable satisfaction about the purpose and scope, and any confidentiality notice.',['S6']);
+  if (a.purpose==='housing'&&legalConditions(a).housing.state===true) add('Housing Act 1983 (Vic)',a.housingRegister==='yes'?'s 142J(2) (housing register disclosure)':a.housingRegister==='no'?'s 142J(1) (social housing disclosure)':'ss 142I–142J (confirm which housing purpose applies)','The request concerns social housing purposes or the Victorian Housing Register.','Confirm both parties’ roles, necessity for the specific purpose, and any register authorisation or preserved statutory prohibition.',['SH1','SH2','SH3']);
+  if (legalConditions(a).integration.state===true) add(sharingAct,'ss 5 and 15(2) (disclosing identifiable data for integration)','The proposal involves combining identifiable datasets to inform government policy making, service planning, or design. The receiving body’s eligibility has been checked. A Chief Data Officer request is not required for this route.','Verify the written eligibility check and the agency’s responsible officer. Check secrecy, confine identifiers to integration, and check ss 18–19 for de-identification and releasing results.',['V1','V3','V4','V5']);
   const grounds=privacyGrounds(a);
   for (const ground of [grounds.personal,grounds.health]) if (ground) results.push(ground);
   if (a.audience==='public'&&a.request==='regular') {
@@ -166,8 +166,8 @@ export function releaseDetails(a,findings=identify(a)) {
       source:{label:'OVIC guidance on informal access',url:'https://ovic.vic.gov.au/freedom-of-information/foi-guidelines/section-16/'},
     };
   }
-  return {bases,privacy,policy,departmentFunction:a.departmentWork==='yes'&&!bases.length,
-    authorityConfirmed:ordinaryAuthorityComplete(a),
-    departmentBasis:ordinaryAuthorityComplete(a)?`User-recorded authority: ${a.authorityBasis.trim()}. Function: ${a.authorityFunction.trim()}. Authorised role and instrument: ${a.authorityRole.trim()}. This records the responsible team’s check, not independent legal verification by the tool.`:'Underlying authority not established. Identify the actual function, exact Act and provision or other legal capacity, and the authorised role and instrument. The department’s establishment and portfolio allocation do not themselves authorise this disclosure.',approval};
+  return {conditions:legalConditions(a),bases,privacy,policy,departmentFunction:a.departmentWork==='yes'&&!bases.length,
+    authorityConfirmed:false,
+    departmentBasis:'Agency function identified from the facts. The responsible team must identify any underlying statutory authority or Crown capacity and confirm the authorised role before release.',approval};
 }
 

@@ -24,8 +24,8 @@ test('explicit absence of child and family context narrows the schemes',()=>{
   }
 });
 test('later positive child or family facts prevent exclusion from an earlier context answer',()=>{
-  assert.equal(byId({context:'neither',purpose:'child'},'ciss').status,'relevant');
-  assert.equal(byId({context:'neither',purpose:'family'},'fviss').status,'relevant');
+  assert.equal(byId({context:'neither',purpose:'child'},'ciss').status,'check');
+  assert.equal(byId({context:'neither',purpose:'family'},'fviss').status,'check');
 });
 test('VDS remains possible until both routes are ruled out',()=>{
   assert.equal(byId({audience:'government',cdoRequest:'no'},'vds').status,'possible');
@@ -33,7 +33,7 @@ test('VDS remains possible until both routes are ruled out',()=>{
   assert.equal(item.status,'excluded');assert.ok(item.branches.every(b=>b.status==='excluded'));
 });
 test('non-identifying data does not exclude a statutory CDO pathway',()=>{
-  const item=byId({request:'cdo',information:'anonymous'},'vds');
+  const item=byId({department:'dffh',request:'cdo',cdoWriting:'yes',cdoPurpose:'yes',cdoRestricted:'no',information:'anonymous'},'vds');
   assert.equal(item.status,'relevant');assert.equal(item.branches[0].status,'relevant');
   assert.equal(item.branches[1].status,'excluded');
 });

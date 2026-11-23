@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {departments,getDepartment,departmentRecord,ordinaryAuthorityComplete} from '../department-data.mjs';
+import {departments,getDepartment,departmentRecord} from '../department-data.mjs';
 import portfolios from '../portfolio-legislation.mjs';
 import {evaluatePathways} from '../pathway-tracker.mjs';
 
@@ -20,13 +20,8 @@ test('portfolio navigation preserves split allocations as separate ministerial e
  for(const title of ['Ambulance Services Act 1986','Health Records Act 2001','National Redress Scheme for Institutional Child Sexual Abuse (Commonwealth Powers) Act 2018','Monitoring of Places of Detention by the United Nations Subcommittee on Prevention of Torture (OPCAT) Act 2022'])assert.ok(portfolios.some(p=>p.entries.some(e=>e.title===title)),title);
  for(const p of portfolios)for(const e of p.entries){assert.ok(e.page>=p.page&&e.page<=103);assert.doesNotMatch(e.title,/Except:|•|\d{5}|administered|the Minister/);}
 });
-test('underlying authority remains unchecked until every required fact is recorded',()=>{
- const full={department:'dffh',departmentWork:'yes',authorityVerified:'yes',authorityCheck:'yes',authorityBasis:'Checked capacity',authorityFunction:'Function',authorityRole:'Role and instrument'};
- assert.equal(ordinaryAuthorityComplete(full),true);
- const agency=a=>evaluatePathways(a).find(p=>p.id==='agency');
- assert.equal(agency({department:'dffh',departmentWork:'yes'}).status,'check');
- assert.equal(agency(full).status,'relevant');
- for(const k of ['department','authorityBasis','authorityFunction','authorityRole'])assert.equal(ordinaryAuthorityComplete({...full,[k]:' '}),false,k);
- assert.match(departmentRecord(full).join('\n'),/S 684/);
- assert.match(departmentRecord({}).join('\n'),/Not established/);
+test('department records do not require a user-supplied legal basis',()=>{
+ const record=departmentRecord({department:'dffh'}).join('\n');
+ assert.match(record,/S 684/);assert.doesNotMatch(record,/Not recorded|authorityFunction/);
+ assert.equal(evaluatePathways({departmentWork:'yes'}).find(p=>p.id==='agency').status,'check');
 });

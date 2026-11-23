@@ -1,22 +1,19 @@
-import {departments,getDepartment,foundationLaws,generalOrder,checkedDate} from './department-data.mjs?v=20261123-departments';
-import portfolios from './portfolio-legislation.mjs?v=20261123-departments';
+import {departments,getDepartment,foundationLaws,generalOrder,checkedDate} from './department-data.mjs?v=20261123-logic';
+import portfolios from './portfolio-legislation.mjs?v=20261123-logic';
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;};
 const link=(text,url)=>{const a=el('a',null,text);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
 const selectOptions=(select)=>{select.append(new Option('Choose a department',''));for(const d of departments)select.append(new Option(`${d.name} (${d.short})`,d.id));select.append(new Option('Other Victorian department or body','other'));};
 export function setupDepartments({getAnswers,onChange}) {
  const select=document.getElementById('department');selectOptions(select);
  const profile=document.getElementById('department-profile');
- const fields=['authorityFunction','authorityBasis','authorityRole'];
  const updateProfile=()=>{
   const d=getDepartment(select.value);profile.replaceChildren();
-  if(!d){profile.append(el('p',null,select.value==='other'?'Use the authority register below to record this body’s own establishment and functions. Department profiles do not establish authority for a statutory body.':'Choose the department making the release to see its establishment or naming instrument.'));return;}
+  if(!d){profile.append(el('p',null,select.value==='other'?'The responsible team will need to check this body’s establishment and functions. Department profiles do not establish authority for a statutory body.':'Choose the department making the release to see its establishment or naming instrument.'));return;}
   const i=d.instruments.find(i=>/2020|2022|2018/.test(i.made))??d.instruments[0];
   profile.append(el('strong',null,d.short+' · '+(i.verification==='Original Gazette inspected'?'Instrument located':'Historical source requires verification')),el('p',null,i.effect),link(i.citation,i.url));
   const more=el('a','text-button','Explore foundations and portfolio Acts →');more.href='#departments';profile.append(more);
  };
  select.addEventListener('change',()=>{updateProfile();onChange('department',select.value);renderLibrary();});
- for(const key of fields)document.getElementById(key).addEventListener('input',e=>onChange(key,e.target.value));
- document.getElementById('authority-verified').addEventListener('change',e=>onChange('authorityVerified',e.target.checked?'yes':'no'));
  const librarySelect=document.getElementById('library-department');selectOptions(librarySelect);
  librarySelect.addEventListener('change',()=>renderLibraryProfile(librarySelect.value));
  const portfolioSelect=document.getElementById('portfolio-filter');portfolioSelect.append(new Option('All 60 ministerial portfolios','all'),new Option('Department starting points','department'));
@@ -61,5 +58,5 @@ export function setupDepartments({getAnswers,onChange}) {
  const sources=document.getElementById('allocation-sources');sources.append(link('Signed General Order · '+generalOrder.date,generalOrder.pdf),link('Check for a newer General Order',generalOrder.latest));
  document.getElementById('department-checked').textContent='Sources checked '+checkedDate+'. Confirm currency for the date of your decision.';
  updateProfile();renderLibrary();
- return {refresh:()=>{const a=getAnswers();select.value=a.department??'';for(const k of fields)document.getElementById(k).value=a[k]??'';document.getElementById('authority-verified').checked=a.authorityVerified==='yes';updateProfile();renderLibrary();}};
+ return {refresh:()=>{const a=getAnswers();select.value=a.department??'';updateProfile();renderLibrary();}};
 }
