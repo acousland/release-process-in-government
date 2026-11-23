@@ -1,4 +1,4 @@
-import {hasPersonal,hasHealth,isCdoRequest,identify} from './release-rules.mjs';
+import {hasPersonal,hasHealth,isCdoRequest,identify} from './release-rules.mjs?v=20261123-tracker';
 
 // Evaluate from the current answers every time, so Back and Start again restore candidates.
 // A ruled-out disclosure pathway does not remove other duties under the same Act.

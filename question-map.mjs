@@ -1,5 +1,5 @@
-import graph from './question-map-data.mjs';
-import {getStep, nextStep} from './assessment.mjs';
+import graph from './question-map-data.mjs?v=20261123-tracker';
+import {getStep, nextStep} from './assessment.mjs?v=20261123-tracker';
 
 const get=id=>document.getElementById(id);
 const byId=new Map(graph.nodes.map(node=>[node.id,node]));
@@ -390,3 +390,4 @@ export function showQuestionMap(frame,id) {
   build();
   requestAnimationFrame(()=>focusNode(byId.has(id)?id:frame.current));
 }
+

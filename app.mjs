@@ -1,8 +1,8 @@
-import tree from './tree-data.mjs';
-import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs';
-import { releaseDetails } from './release-rules.mjs';
-import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs';
-import { evaluatePathways, statusLabels } from './pathway-tracker.mjs';
+import tree from './tree-data.mjs?v=20261123-tracker';
+import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs?v=20261123-tracker';
+import { releaseDetails } from './release-rules.mjs?v=20261123-tracker';
+import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs?v=20261123-tracker';
+import { evaluatePathways, statusLabels } from './pathway-tracker.mjs?v=20261123-tracker';
 
 const get = id => document.getElementById(id);
 const element = (tag, className, text) => {

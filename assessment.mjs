@@ -1,4 +1,4 @@
-import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs';
+import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs?v=20261123-tracker';
 
 export const stages=['Request','Information','Safeguards','Decision'];
 export const firstStep='audience';
