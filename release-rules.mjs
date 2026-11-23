@@ -14,6 +14,7 @@ const hp=(provision,why,verify,ref)=>privacy(healthAct,provision,why,verify,ref)
 
 export function hasPersonal(a){return a.information==='personal'||a.information==='mixed';}
 export function hasHealth(a){return a.information==='health'||a.information==='mixed';}
+export function isCdoRequest(a){return a.request==='cdo'||a.cdoRequest==='yes';}
 
 export function privacyGrounds(a) {
   let personal=null,health=null;
@@ -76,7 +77,7 @@ export function identify(a) {
     if(hasPersonal(a)) results.push(ip('Schedule 1, IPP 2.1(f)','A verified law requiring or authorising the disclosure can supply the privacy ground.','Confirm the exact requirement and approved scope.','P7'));
     if(hasHealth(a)) results.push(hp('Schedule 1, HPP 2.2(c)','A verified law requiring, authorising or permitting the disclosure may supply the health privacy ground.','Confirm the exact authority and that the prescribed-law exception is not engaged.','H1'));
   }
-  if (a.request==='cdo') add(sharingAct,'s 9(2)(a) (providing data in response to an s 8 notice)'+
+  if (isCdoRequest(a)) add(sharingAct,'ss 5, 8 and 9(2)(a) (providing data in response to an s 8 notice)'+
     (hasPersonal(a)||hasHealth(a)?' and s 15(1) (disclosing identifiable data)':''),
     'A written request from the Victorian Chief Data Officer points to the statutory notice pathway.',
     'Confirm a valid notice and responsible officer, screen restricted data and any secrecy provisions under ss 20–21, and respond within 10 business days or any agreed longer period. Provide lawful data or written reasons under ss 9 and 14.',['V2','VD1','VD2']);
@@ -105,7 +106,7 @@ export function identify(a) {
   if (a.purpose==='youth') add('Youth Justice Act 2024 (Vic)','Part 15.1, including ss 704(2) and 708 where applicable','The proposed release supports specified youth justice functions or case coordination.','Confirm the actor, recipient, function, and necessity before choosing the exact subsection.',['S5']);
   if (a.purpose==='regulator') add('Social Services Regulation Act 2021 (Vic)','ss 189 and 193(2)','The proposal concerns giving material to the Social Services Regulator for its functions or to decide whether further information may lawfully be shared.','Confirm the recipient is the Regulator, the agency’s relevant-agency capacity, reasonable satisfaction about the purpose and scope, and any confidentiality notice.',['S6']);
   if (a.purpose==='housing') add('Housing Act 1983 (Vic)',a.housingRegister==='yes'?'s 142J(2) (housing register disclosure)':a.housingRegister==='no'?'s 142J(1) (social housing disclosure)':'ss 142I–142J (confirm which housing purpose applies)','The request concerns social housing purposes or the Victorian Housing Register.','Confirm both parties’ roles, necessity for the specific purpose, and any register authorisation or preserved statutory prohibition.',['SH1','SH2','SH3']);
-  if (a.purpose==='linkage'&&a.linkage==='yes'&&a.information!=='anonymous') add(sharingAct,'s 15(2) (disclosing identifiable data for integration)','The proposal involves matching identifiable datasets to inform government policy making, service planning, or design.','Verify the receiving body’s statutory eligibility and the agency’s responsible officer. Check secrecy, confine identifiers to integration, and check ss 18–19 for de-identification and releasing results.',['V1','V3','V4','V5']);
+  if (!isCdoRequest(a)&&a.linkage==='yes'&&a.linkageRecipient==='yes'&&(hasPersonal(a)||hasHealth(a))) add(sharingAct,'ss 5 and 15(2) (disclosing identifiable data for integration)','The proposal involves combining identifiable datasets to inform government policy making, service planning, or design. The receiving body’s eligibility has been checked. A Chief Data Officer request is not required for this route.','Verify the written eligibility check and the agency’s responsible officer. Check secrecy, confine identifiers to integration, and check ss 18–19 for de-identification and releasing results.',['V1','V3','V4','V5']);
   const grounds=privacyGrounds(a);
   for (const ground of [grounds.personal,grounds.health]) if (ground) results.push(ground);
   if (a.audience==='public'&&a.request==='regular') {
@@ -164,5 +165,7 @@ export function releaseDetails(a,findings=identify(a)) {
       source:{label:'OVIC guidance on informal access',url:'https://ovic.vic.gov.au/freedom-of-information/foi-guidelines/section-16/'},
     };
   }
-  return {bases,privacy,policy,departmentFunction:a.departmentWork==='yes'&&!bases.length,approval};
+  return {bases,privacy,policy,departmentFunction:a.departmentWork==='yes'&&!bases.length,
+    departmentBasis:'Provisional basis: the underlying agency function. These answers do not establish a standalone disclosure provision. Confirm the function, requester, and purpose before finalising the legal basis.',approval};
 }
+

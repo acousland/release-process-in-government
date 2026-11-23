@@ -1,4 +1,4 @@
-import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails} from './release-rules.mjs';
+import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs';
 
 export const stages=['Request','Information','Safeguards','Decision'];
 export const firstStep='audience';
@@ -10,7 +10,7 @@ const ask=(stage,title,description,yes,no='refer',unknown='refer',captions=[])=>
 ]);
 const Q=stages[0], I=stages[1], S=stages[2];
 const policyCheck=a=>a.audience==='government'?'govPurpose':a.audience==='public'?'publication':'limits';
-const workingBasis=a=>a.request==='regular'&&!skillsNeeded.has(a.purpose)?'departmentWork':policyCheck(a);
+const workingBasis=a=>a.request==='regular'&&!isCdoRequest(a)&&(!skillsNeeded.has(a.purpose)||(a.purpose==='linkage'&&a.information==='anonymous'))?'departmentWork':policyCheck(a);
 const alertRoute=a=>a.purpose==='threat'?'threat':a.purpose==='research'?'researchNeed':
   a.purpose==='enforcement'?'enforcement':a.purpose==='unlawful'?'unlawful':a.purpose==='claim'?'claim':a.purpose==='health-services'&&hasHealth(a)?'healthReason':a.purpose==='intelligence'&&hasPersonal(a)?'intelCheck':'no-basis';
 const nextPrivacy=a=>missingPrivacy(a)?'consent':workingBasis(a);
@@ -20,9 +20,10 @@ const nextDestination=a=>hasPersonal(a)||hasHealth(a)?'destination':'safeVersion
 const skillsNeeded=new Set(['child','family','placement','protection','youth','regulator','housing','linkage']);
 
 const purposeOptions=[
-  choice('service','Provide a service or do routine work','For example, send information to a provider arranging support.','information'),
+  choice('service','Deliver a service or do operational work','For example, arrange support for a client or administer an existing service.','information'),
+  choice('policy','Inform government policy, service planning, or design','For example, analyse demand, compare policy options, or design a future service. This is different from delivering a service to an individual.','information'),
   choice('research','Research, statistics, or evaluation','For example, analyse outcomes or prepare a statistical extract.','information'),
-  choice('linkage','Match records across government for policy or service design','The receiving team needs to match data about the same people or households.','linkage'),
+  choice('linkage','Combine datasets for government policy or service planning or design','For example, match records about the same people or households.','information'),
   choice('child','Help with a child’s wellbeing or safety','For example, help another service assess a child’s needs or manage a safety risk.','childRecipient'),
   choice('family','Assess or manage family violence risk','For example, check the risk to someone or help them stay safe.','familyRecipient'),
   choice('placement','Give information to someone who may care for a child or already does','The child is being placed, or has been placed, with someone other than their parent.','placement'),
@@ -44,12 +45,12 @@ function definitionOfPurpose(a) {
   const priority = a.audience==='public'
     ? ['publish','research','service','threat']
     : a.audience==='person' ? ['service','child','family','placement','housing','threat']
-    : ['service','research','linkage','child','family','protection','housing'];
+    : ['service','policy','research','linkage','child','family','protection','housing'];
   const score=opt=>{const i=priority.indexOf(opt.value);return opt.value==='unsure'?999:i<0?90:i;};
   const hasAudience=(opt)=>{
     if (a.audience==='public') return ['service','research','publish','threat','unsure'].includes(opt.value);
     if (a.audience!=='person'&&opt.value==='placement') return false;
-    if (a.audience==='person'&&['linkage','regulator','intelligence'].includes(opt.value)) return false;
+    if (a.audience==='person'&&['policy','linkage','regulator','intelligence'].includes(opt.value)) return false;
     return true;
   };
   return purposeOptions.filter(hasAudience).sort((a,b)=>score(a)-score(b));
@@ -64,7 +65,7 @@ export const steps={
     unsure(),
   ]),
   request:options(Q,'How did the release come about?','Choose the description that best matches what happened. A routine email from another agency is a regular request.',[
-    choice('regular','A regular request, or the agency plans to share or publish','There is no formal demand or special request for personal records.','purpose'),
+    choice('regular','A regular request, or the agency plans to share or publish','There is no formal demand or special request for personal records.',a=>a.audience==='government'?'cdoRequest':'purpose'),
     choice('foi','The person specifically asked for freedom of information','They said they were making an FOI request, or it came through the FOI team.','foiWriting'),
     choice('order','A court or authority sent a document saying the information is required','For example, a subpoena, warrant, order, or written direction.','noticeType'),
     choice('cdo','The Victorian Chief Data Officer sent a written data request','The request is from that officer and is addressed to the department.','cdoWriting'),
@@ -81,9 +82,12 @@ export const steps={
     unsure('notice-reviewed-pending'),
   ]),
   noticeReviewed:ask(Q,'Has the responsible team confirmed what the document requires?','Check for an existing written confirmation of the exact information to produce, where to send it, and when it is due.','information','notice-reviewed-pending','notice-reviewed-pending'),
-  cdoWriting:ask(Q,'Does the written request say what data is needed, why, and how it will be handled?','Check whether it is addressed to the department and identifies a government policy or service planning purpose. Record when it arrived.','cdoRestricted','cdo-review','cdo-review'),
+  cdoRequest:ask(Q,'Does the request identify the Victorian Chief Data Officer as the requester?','Check the sender, request letter, and attachments. An ordinary agency email or a request under the VPS Data Sharing Policy is different. Non-identifying data can also be requested by the Chief Data Officer.','cdoWriting','purpose','cdo-review'),
+  cdoWriting:ask(Q,'Does the written request say what data is needed, why, and how it will be handled?','Check whether it is addressed to your agency’s head or responsible officer. Record when it arrived so the statutory response period can be managed.','cdoPurpose','cdo-review','cdo-review'),
+  cdoPurpose:ask(Q,'Will the data inform government policy making, service planning, or design?','For example, analyse demand or design future services. Delivering a service to an individual, or carrying out an individual enforcement action, is a different purpose.','cdoRestricted','cdo-review','cdo-review'),
   cdoRestricted:ask(I,'Could the data reveal a protected source, witness, or investigation method?','Also consider whether disclosure could prejudice national security. Give the responsible officer enough time to respond.','cdo-restricted','information','cdo-review'),
-  linkage:ask(Q,'Is the recipient matching identifiable data to inform government policy or service planning or design?','For example, matching records about the same people to understand what services are needed. Identifiable data are for matching. Later analysis and release of results have separate safeguards.','information','ordinary-alternative','refer'),
+  linkage:ask(I,'Will the receiving team combine or collate two or more datasets for government policy, service planning, or design?','For example, match records about the same people to understand service needs. Identifiable data are for integration. Later analysis and release of results have separate safeguards.','linkageRecipient',a=>a.purpose==='linkage'?'ordinary-alternative':'original','refer'),
+  linkageRecipient:ask(I,'Has the responsible team confirmed that this recipient can receive identifiable data for this integration project?','Use an existing written check naming the legal recipient. Under the Victorian Data Sharing Act, this must be a department Secretary or a body or person prescribed as a data analytics body. Another Victorian government body does not automatically qualify.',policyCheck,'ordinary-alternative','refer'),
   childRecipient:options(Q,'Who would receive the information about the child?','Choose the recipient for this disclosure.',[
     choice('org','A service or another organisation working with children','For example, a school or support service.','childRequest'),
     choice('direct','The child or someone responsible for or living with them','The purpose is to manage a risk to the child’s safety.','childAction'),
@@ -195,8 +199,10 @@ export const steps={
 };
 
 function afterInformation(a) {
-  if (a.purpose==='linkage'&&a.information==='anonymous') return 'ordinary-alternative';
-  if (a.request==='order'||a.request==='cdo'||skillsNeeded.has(a.purpose)) return policyCheck(a);
+  if (a.request==='order'||isCdoRequest(a)) return policyCheck(a);
+  if (a.purpose==='linkage'&&a.information==='anonymous') return workingBasis(a);
+  if (a.purpose==='linkage'||(a.audience==='government'&&['policy','research'].includes(a.purpose)&&a.information!=='anonymous')) return 'linkage';
+  if (skillsNeeded.has(a.purpose)) return policyCheck(a);
   if (a.information==='anonymous') return workingBasis(a);
   return 'original';
 }
@@ -239,7 +245,7 @@ const messages={
 export function result(id,a) {
   const findings=identify(a);
   const release=releaseDetails(a,findings);
-  const formal=['order','cdo'].includes(a.request);
+  const formal=a.request==='order'||isCdoRequest(a);
   const must= a.request==='order'||a.purpose==='placement'||
     (a.purpose==='child'&&a.childRecipient==='org'&&a.childRequest==='yes')||
     (a.purpose==='family'&&a.familyRecipient==='org'&&a.familyRequest==='yes');
@@ -248,13 +254,14 @@ export function result(id,a) {
     return {type,title,description,findings,release};
   }
   if (!findings.some(finding=>finding.kind!=='policy')&&a.audience!=='public'&&a.information==='anonymous') {
-    findings.unshift({kind:'context',law:'Ordinary departmental sharing',provision:'Authority for the underlying departmental function',why:'The version was assessed as genuinely non-identifying. The facts did not point to a standalone disclosure provision.',verify:'Record the function or existing authority supporting this activity and confirm any source restrictions and approval.',refs:['I4','R1','R2']});
+    findings.unshift({kind:'context',law:'Ordinary departmental sharing',provision:'Provisional basis: authority for the underlying departmental function',why:'The version was assessed as genuinely non-identifying. These answers do not establish a Victorian Data Sharing Act pathway or another standalone disclosure provision. Non-identifying data can still fall within a statutory Chief Data Officer request.',verify:'Confirm the function, requester, purpose, source restrictions, and approval before finalising the basis. If the requester or purpose changes, reassess the applicable pathway.',refs:['I4','R1','R2','V1','V2','V3']});
   }
   if (id==='ready') {
     return {type:'refer',title:must?'Possible duty to disclose · confirmation pending':'Release pathway identified · approval pending',description:'Use the basis below to prepare the decision. Confirm who has authority and send them the exact version, recipient, and purpose for approval before release.',findings,release,approvalStatus:'pending'};
   }
-  if (must||formal||skillsNeeded.has(a.purpose)) {
-    return {type:'release',title:must?'A duty to disclose may apply':a.request==='cdo'?'A statutory response pathway applies':'A possible statutory sharing pathway applies',description:'Use the basis below for the approved scope. Confirm the specified conditions and any required records or notice with the responsible officer before sending the information.',findings,release,approvalStatus:'recorded'};
+  if (must||formal||release.bases.some(b=>b.law==='Victorian Data Sharing Act 2017 (Vic)')||(skillsNeeded.has(a.purpose)&&a.information!=='anonymous')) {
+    return {type:'release',title:must?'A duty to disclose may apply':isCdoRequest(a)?'A statutory response pathway applies':'A possible statutory sharing pathway applies',description:'Use the basis below for the approved scope. Confirm the specified conditions and any required records or notice with the responsible officer before sending the information.',findings,release,approvalStatus:'recorded'};
   }
   return {type:'release',title:'The answers support the proposed release',description:'The result identifies the basis and checks for this approved version. Record the exact purpose and recipient, the decision, and the reasons before release.',findings,release,approvalStatus:'recorded'};
 }
+

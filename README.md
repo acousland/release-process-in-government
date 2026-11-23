@@ -6,4 +6,9 @@ The static website files are in this repository’s root. To publish with GitHub
 
 The guide is a working draft. Legal content was checked on 20 November 2026. Confirm current law and your agency’s delegations before using an outcome for an actual release.
 
+Victorian Data Sharing Act pathways were updated on 23 November 2026. The assessment distinguishes statutory Chief Data Officer requests (including non-identifying data), identifiable-data integration with an eligible data analytics body, and ordinary interagency sharing. It separates policy and service planning from operational delivery, and labels the ordinary agency-function basis as provisional pending confirmation.
+
+Run the assessment and map regression checks with `node --test tests/assessment.test.mjs`.
+
 Assessment answers stay in the browser tab unless copied or downloaded.
+

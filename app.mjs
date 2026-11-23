@@ -125,7 +125,7 @@ function releaseSections(release) {
   const sections=[];
   if (release.bases.length) sections.push(['Act, provision, or written demand',release.bases]);
   if (release.departmentFunction) sections.push(['Agency function',[
-    {law:'Ordinary agency work',provision:'The underlying agency function is the basis. No standalone disclosure provision was identified.'},
+    {law:'Ordinary agency work',provision:release.departmentBasis},
   ]]);
   if (release.privacy.length) sections.push(['Privacy provisions',release.privacy]);
   if (release.policy.length) sections.push(['Applicable policies',release.policy]);
@@ -551,3 +551,4 @@ document.addEventListener('click',event=>{
 window.addEventListener('hashchange',hashRoute);
 renderAssessment();
 hashRoute();
+
