@@ -2,6 +2,7 @@ import tree from './tree-data.mjs';
 import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs';
 import { releaseDetails } from './release-rules.mjs';
 import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs';
+import { evaluatePathways, statusLabels } from './pathway-tracker.mjs';
 
 const get = id => document.getElementById(id);
 const element = (tag, className, text) => {
@@ -65,7 +66,61 @@ function pathFrame(selection=null) {
     outcome:getQuestion(activeStep)?null:result(activeStep,answers),
   };
 }
-function syncPath(selection=null) { drawLivePath(pathFrame(selection)); }
+function syncPath(selection=null) {
+  drawLivePath(pathFrame(selection));
+  renderPathways(selection);
+}
+function renderPathways(selection=null) {
+  const answers=getAnswers();
+  const preview=selection!=null&&getStep(activeStep,answers)!=null;
+  const evaluated=preview?{...answers,[activeStep]:selection}:answers;
+  const items=evaluatePathways(evaluated);
+  const remaining=items.filter(item=>item.status!=='excluded').length;
+  get('pathway-summary').textContent=`${remaining} open · ${items.length-remaining} ruled out`;
+  get('pathway-preview').textContent=preview?'Preview for your selected answer. Continue to record it.':'Updates as you answer. Going back restores affected pathways.';
+  const list=get('pathway-list');
+  // Preserve position while changing answers. The summary announces the change without moving focus.
+  const scroll=get('assessment-side').scrollTop;
+  list.replaceChildren();
+  for(const group of [...new Set(items.map(item=>item.group))]) {
+    list.append(element('h3','pathway-group',group));
+    const rows=element('ul','pathway-items');
+    for(const item of items.filter(item=>item.group===group)) {
+      const row=element('li','pathway-item pathway-'+item.status);
+      row.dataset.pathway=item.id;
+      row.dataset.status=item.status;
+      const heading=element('div','pathway-row-heading');
+      const name=element('strong','pathway-name',item.label);
+      heading.append(name,element('span','pathway-status',statusLabels[item.status]));
+      row.append(heading,element('p','pathway-reason',item.reason));
+      if(item.branches.length) {
+        const branches=element('ul','pathway-branches');
+        for(const branch of item.branches) {
+          const branchRow=element('li','pathway-'+branch.status);
+          branchRow.append(element('strong','pathway-name',branch.label),element('span','pathway-branch-status',statusLabels[branch.status]),element('p','pathway-reason',branch.reason));
+          branches.append(branchRow);
+        }
+        row.append(branches);
+      }
+      const evidence=element('div','pathway-evidence');
+      for(const step of [...new Set(item.evidence)]) {
+        const index=trail.findIndex(entry=>entry.step===step);
+        if(index<0)continue;
+        const entry=trail[index],question=getStep(step,answers),answer=question.options.find(o=>o.value===entry.choice);
+        const source=button(`Answer ${index+1}: ${answer.label}`,'pathway-answer',()=>backTo(index));
+        source.title=question.title+' · Change this answer';
+        evidence.append(source);
+      }
+      if(evidence.childElementCount)row.append(evidence);
+      const refs=element('div','pathway-refs');
+      for(const ref of item.refs)refs.append(jump(ref,ref,'ref-link'));
+      row.append(refs);
+      rows.append(row);
+    }
+    list.append(rows);
+  }
+  get('assessment-side').scrollTop=scroll;
+}
 const question = get('question');
 function backTo(index) {
   const item = trail[index];
@@ -80,6 +135,7 @@ function resetAssessment() {
   activeStep=firstStep;
   previousChoice=null;
   reviewOpen=false;
+  get('assessment-side').scrollTop=0;
   renderAssessment(true);
 }
 function references(refs) {
@@ -207,7 +263,12 @@ function recordText(outcome) {
   for(const finding of outcome.findings) {
     parts.push(finding.law,finding.provision,finding.why,'Confirm before release. '+finding.verify,'References. '+finding.refs.map(refText).join(' · '),'');
   }
-  parts.push('Answers');
+  parts.push('Legislation and framework assessment');
+  for(const item of evaluatePathways(getAnswers())) {
+    parts.push(`${item.label} · ${statusLabels[item.status]}`,item.reason);
+    for(const branch of item.branches)parts.push(`  ${branch.label} · ${statusLabels[branch.status]}`,`  ${branch.reason}`);
+  }
+  parts.push('','Ruled out means the assessed pathway is not supported for this release. Other duties under the same Act may remain.','Answers');
   trail.forEach((item,i)=>{
     const st=getQuestion(item.step), choice=st.options.find(o=>o.value===item.choice);
     parts.push(`${i+1}. ${st.title}`,`   ${choice.label}`);

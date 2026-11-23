@@ -58,11 +58,18 @@ function definitionOfPurpose(a) {
 
 export const steps={
   audience:options(Q,'Who would receive the information?','Choose the audience for this particular release. You’ll answer questions about the facts, and the result will identify the relevant rules.',[
-    choice('government','Another Victorian government body','A Victorian department, agency, or statutory body.','request'),
-    choice('person','A person or their representative','For example, a client, parent, carer, or someone asking for a record.','request'),
-    choice('public','Anyone, through publication','For example, a website, dashboard, report, or open data portal.','request'),
-    choice('other','Another organisation or provider','For example, a contractor, researcher, service provider, or interstate body.','request'),
+    choice('government','Another Victorian government body','A Victorian department, agency, or statutory body.','context'),
+    choice('person','A person or their representative','For example, a client, parent, carer, or someone asking for a record.','context'),
+    choice('public','Anyone, through publication','For example, a website, dashboard, report, or open data portal.','context'),
+    choice('other','Another organisation or provider','For example, a contractor, researcher, service provider, or interstate body.','context'),
     unsure(),
+  ]),
+  context:options(Q,'Does this information or proposed sharing involve children or family violence?','Consider the people described and the purpose of sharing. This keeps child and family violence pathways open even when your main task is routine service delivery.',[
+    choice('children','Children, without a family violence context','','request'),
+    choice('family','Family violence, involving adults only','','request'),
+    choice('both','Children and family violence','','request'),
+    choice('neither','Neither children nor family violence','','request'),
+    unsure('request'),
   ]),
   request:options(Q,'How did the release come about?','Choose the description that best matches what happened. A routine email from another agency is a regular request.',[
     choice('regular','A regular request, or the agency plans to share or publish','There is no formal demand or special request for personal records.',a=>a.audience==='government'?'cdoRequest':'purpose'),
@@ -186,6 +193,14 @@ export const steps={
     choice('other','Something else','','limits'),
     unsure('limits'),
   ]),
+  arrangements:options(S,'Is there an existing MoU or data sharing agreement for this release?','Check with the information owner. An arrangement must cover the actual parties, data, and purpose, and its conditions must be checked separately from legal authority.',[
+    choice('none','No applicable MoU or data sharing agreement','','limits'),
+    choice('mou','An MoU applies','','arrangementChecked'),
+    choice('agreement','A data sharing agreement applies','','arrangementChecked'),
+    choice('both','Both apply','','arrangementChecked'),
+    unsure('arrangement-review'),
+  ]),
+  arrangementChecked:ask(S,'Has the information owner confirmed this release meets the arrangement’s conditions?','Check it is current and covers the parties, data, and purpose. Confirm approvals, secure handling, retention, onward sharing, and any limits on linking or publication.','limits','arrangement-review','arrangement-review'),
   limits:ask(S,'Is there a known restriction on sharing this material?','Look for a court order, a promise of confidentiality, a limit in a data-sharing agreement, protected reporter details, or a risk of harm or prejudice to an investigation. Ask the record owner if uncertain.','limitsResolved',nextDestination,'source-hold'),
   limitsResolved:ask(S,'Has the team responsible for that restriction confirmed this version can be shared?','Use a written decision about the exact fields and recipient. If the restriction applies to only some material, narrow the version and assess it again.',nextDestination,'source-hold','source-hold'),
   destination:ask(S,'Will an external recipient outside Victoria receive or access this personal or health information?','Include service providers, remote support and administrators, and access to hosted data. Choose No if the release contains no personal or health information.','transferChecked','safeVersion','transfer-review'),
@@ -221,7 +236,8 @@ export function nextStep(id,value,answers={}) {
   const a={...answers,[id]:value};
   const next=optionsFor(id,a).find(o=>o.value===value)?.next;
   if (!next) return null;
-  return typeof next==='function'?next(a):next;
+  const destination=typeof next==='function'?next(a):next;
+  return destination==='limits'&&!['arrangements','arrangementChecked'].includes(id)?'arrangements':destination;
 }
 
 const messages={
@@ -239,6 +255,7 @@ const messages={
   'source-hold':['hold','Hold until the source restriction is resolved','Ask the record owner or relevant specialist to confirm the permission in writing, or assess a version that excludes any protected material.'],
   'transfer-review':['refer','Confirm the transfer before release','Ask Privacy to review who will have access outside Victoria, the applicable transfer ground, and the safeguards.'],
   'function-review':['refer','Confirm why the agency is sharing','Ask the record owner to confirm the departmental function and why the proposed recipient needs this information.'],
+  'arrangement-review':['refer','Confirm the sharing arrangements','Ask the information owner to identify any applicable MoU or data sharing agreement and confirm its conditions for this exact release. An agreement does not replace the legal basis.'],
   'safety-hold':['hold','Hold until the release is ready to send safely','Limit the version to what is needed and confirm the recipient, delivery channel, and safeguards.'],
 };
 

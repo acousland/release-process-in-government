@@ -28,14 +28,24 @@
 <main id="main" class="shell" tabindex="-1">
   <section id="assessment-view">
     <header class="page-heading">
-      <div><p class="eyebrow">GUIDED ASSESSMENT</p><h1>Can we release this information?</h1><p>Answer questions about the request and the information. The assessment will identify which rules may apply.</p></div>
+      <div><p class="eyebrow">GUIDED ASSESSMENT</p><h1>Can we release this information?</h1><p>Start with every pathway open. As you answer, see which legislation and frameworks remain possible, and why others are ruled out.</p></div>
       <button type="button" id="toggle-path" class="button outline path-toggle" aria-controls="path-panel" aria-expanded="true">Hide decision path</button>
     </header>
     <div class="assessment-grid" id="assessment-grid">
       <section class="card question-card" aria-label="Assessment question">
         <div id="question" aria-live="polite"></div>
       </section>
-      <aside class="side-column" aria-label="Assessment path and progress">
+      <aside class="side-column" id="assessment-side" aria-label="Legislation, frameworks, and assessment progress" tabindex="0">
+        <section class="card pathway-card" aria-labelledby="pathways-heading">
+          <header class="pathway-heading">
+            <p class="eyebrow">LIVE ASSESSMENT</p>
+            <h2 id="pathways-heading">Legislation and frameworks</h2>
+            <p id="pathway-summary" class="pathway-summary" role="status" aria-live="polite" aria-atomic="true"></p>
+            <p id="pathway-preview" class="pathway-preview"></p>
+            <p class="pathway-scope">“Still possible” is not approval. A crossed-out item rules out the assessed release pathway. Other duties under the same Act can still apply.</p>
+          </header>
+          <div id="pathway-list"></div>
+        </section>
         <section id="path-panel" class="card path-card" aria-label="Live decision path">
           <div class="path-heading">
             <div><h2>Your decision path</h2><p>Follows the question you’re answering.</p></div>

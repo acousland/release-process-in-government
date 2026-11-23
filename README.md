@@ -12,3 +12,7 @@ Run the assessment and map regression checks with `node --test tests/assessment.
 
 Assessment answers stay in the browser tab unless copied or downloaded.
 
+The live legislation and framework panel starts every candidate as possible. It shows answer-based exclusions with reasons, keeps unverified conditions open, and treats security, agreements, MARAM, human rights, and recordkeeping separately from disclosure authority. Changing an earlier answer restores affected candidates. The copied or downloaded record includes these assessments and the separate CDO and integration subroutes.
+
+Run all regression checks with `node --test tests/*.test.mjs`.
+

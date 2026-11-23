@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {firstStep,getStep,nextStep,result} from '../assessment.mjs';
 import graph from '../question-map-data.mjs';
 
-const defaults={audience:'government',request:'regular',cdoRequest:'no',purpose:'service',information:'anonymous',departmentWork:'yes',govPurpose:'yes',limits:'no',safeVersion:'yes',approval:'unsure'};
+const defaults={audience:'government',context:'neither',request:'regular',cdoRequest:'no',purpose:'service',information:'anonymous',departmentWork:'yes',govPurpose:'yes',arrangements:'none',limits:'no',safeVersion:'yes',approval:'unsure'};
 function assess(overrides={}) {
   const choices={...defaults,...overrides},answers={},trail=[];
   let current=firstStep;
@@ -66,4 +66,9 @@ test('operational personal-information route retains its privacy checks',()=>{
 });
 test('map question text matches the form',()=>{
   for(const node of graph.nodes){const step=getStep(node.id);if(step){assert.equal(node.title,step.title);assert.equal(node.description,step.description);}}
+});
+test('applicable agreements must be checked before release',()=>{
+  assert.equal(assess({arrangements:'both',arrangementChecked:'no'}).current,'arrangement-review');
+  assert.equal(assess({arrangements:'both',arrangementChecked:'yes'}).current,'ready');
+  assert.equal(assess({arrangements:'unsure'}).current,'arrangement-review');
 });
