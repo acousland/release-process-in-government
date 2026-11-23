@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {firstStep,getStep,nextStep,result} from '../assessment.mjs';
 import graph from '../question-map-data.mjs';
 
-const defaults={audience:'government',context:'neither',request:'regular',cdoRequest:'no',purpose:'service',information:'anonymous',departmentWork:'yes',govPurpose:'yes',arrangements:'none',limits:'no',safeVersion:'yes',approval:'unsure'};
+const defaults={audience:'government',context:'neither',request:'regular',cdoRequest:'no',purpose:'service',information:'anonymous',departmentWork:'yes',authorityCheck:'yes',govPurpose:'yes',arrangements:'none',limits:'no',safeVersion:'yes',approval:'unsure'};
 function assess(overrides={}) {
-  const choices={...defaults,...overrides},answers={},trail=[];
+  const choices={...defaults,...overrides},answers={department:'dffh',authorityFunction:'Test service function',authorityBasis:'Verified test provision',authorityRole:'Verified test delegation entry',authorityVerified:'yes',...Object.fromEntries(Object.entries(choices).filter(([key])=>['department','authorityFunction','authorityBasis','authorityRole','authorityVerified'].includes(key)))},trail=[];
   let current=firstStep;
   while(getStep(current,answers)) {
     assert.ok(trail.length<40,'Assessment must finish');
@@ -20,10 +20,10 @@ function assess(overrides={}) {
 }
 const underAct=o=>o.release.bases.some(b=>b.law.startsWith('Victorian Data Sharing Act'));
 
-test('ordinary non-identifying service sharing has a provisional function basis',()=>{
+test('ordinary non-identifying sharing requires a recorded and checked underlying authority',()=>{
   const o=assess();
   assert.equal(o.current,'ready');assert.equal(underAct(o),false);
-  assert.match(o.release.departmentBasis,/Provisional basis/);
+  assert.match(o.release.departmentBasis,/User-recorded authority/);
   assert.match(o.findings[0].why,/Non-identifying data can still/);
   assert.ok(o.trail.includes('cdoRequest'));
 });
@@ -71,4 +71,11 @@ test('applicable agreements must be checked before release',()=>{
   assert.equal(assess({arrangements:'both',arrangementChecked:'no'}).current,'arrangement-review');
   assert.equal(assess({arrangements:'both',arrangementChecked:'yes'}).current,'ready');
   assert.equal(assess({arrangements:'unsure'}).current,'arrangement-review');
+});
+
+test('department choice and function confirmation alone do not establish release authority',()=>{
+  for(const authorityVerified of ['no',undefined])assert.equal(assess({authorityVerified}).current,'function-review');
+  for(const field of ['department','authorityBasis','authorityFunction','authorityRole'])assert.equal(assess({[field]:''}).current,'function-review');
+  assert.equal(assess({authorityCheck:'unsure'}).current,'function-review');
+  assert.equal(result('approved',{...defaults,department:'dffh'}).title,'Confirm why the agency is sharing');
 });

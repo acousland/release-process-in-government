@@ -1,3 +1,4 @@
+import {ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
 const privacyAct='Privacy and Data Protection Act 2014 (Vic)';
 const healthAct='Health Records Act 2001 (Vic)';
 const childScheme='Child Wellbeing and Safety Act 2005 (Vic)';
@@ -166,6 +167,7 @@ export function releaseDetails(a,findings=identify(a)) {
     };
   }
   return {bases,privacy,policy,departmentFunction:a.departmentWork==='yes'&&!bases.length,
-    departmentBasis:'Provisional basis: the underlying agency function. These answers do not establish a standalone disclosure provision. Confirm the function, requester, and purpose before finalising the legal basis.',approval};
+    authorityConfirmed:ordinaryAuthorityComplete(a),
+    departmentBasis:ordinaryAuthorityComplete(a)?`User-recorded authority: ${a.authorityBasis.trim()}. Function: ${a.authorityFunction.trim()}. Authorised role and instrument: ${a.authorityRole.trim()}. This records the responsible team’s check, not independent legal verification by the tool.`:'Underlying authority not established. Identify the actual function, exact Act and provision or other legal capacity, and the authorised role and instrument. The department’s establishment and portfolio allocation do not themselves authorise this disclosure.',approval};
 }
 

@@ -1,8 +1,10 @@
-import tree from './tree-data.mjs?v=20261123-tracker';
-import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs?v=20261123-tracker';
-import { releaseDetails } from './release-rules.mjs?v=20261123-tracker';
-import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs?v=20261123-tracker';
-import { evaluatePathways, statusLabels } from './pathway-tracker.mjs?v=20261123-tracker';
+import {setupDepartments} from './department-ui.mjs?v=20261123-departments';
+import {departmentRecord,ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
+import tree from './tree-data.mjs?v=20261123-departments';
+import { firstStep, getStep, nextStep, result, stages } from './assessment.mjs?v=20261123-departments';
+import { releaseDetails } from './release-rules.mjs?v=20261123-departments';
+import { drawLivePath, hasQuestionNode, showQuestionMap } from './question-map.mjs?v=20261123-departments';
+import { evaluatePathways, statusLabels } from './pathway-tracker.mjs?v=20261123-departments';
 
 const get = id => document.getElementById(id);
 const element = (tag, className, text) => {
@@ -53,10 +55,12 @@ function appendTreeText(target, source, linked = true) {
   }
 }
 const trail = [];
+let departmentAnswers={};
+let departmentUI;
 let activeStep = firstStep;
 let previousChoice = null;
 let reviewOpen = false;
-const getAnswers = () => Object.fromEntries(trail.map(item=>[item.step,item.choice]));
+const getAnswers = () => ({...departmentAnswers,...Object.fromEntries(trail.map(item=>[item.step,item.choice]))});
 const getQuestion = (id) => getStep(id,getAnswers());
 function pathFrame(selection=null) {
   const answers=getAnswers();
@@ -132,6 +136,8 @@ function backTo(index) {
 }
 function resetAssessment() {
   trail.length=0;
+  departmentAnswers={department:departmentAnswers.department??''};
+  departmentUI?.refresh();
   activeStep=firstStep;
   previousChoice=null;
   reviewOpen=false;
@@ -180,8 +186,8 @@ function renderProgress(stage) {
 function releaseSections(release) {
   const sections=[];
   if (release.bases.length) sections.push(['Act, provision, or written demand',release.bases]);
-  if (release.departmentFunction) sections.push(['Agency function',[
-    {law:'Ordinary agency work',provision:release.departmentBasis},
+  if (release.departmentFunction) sections.push(['Underlying authority for the activity',[
+    {law:release.authorityConfirmed?'Recorded function and legal authority':'Underlying authority not established',provision:release.departmentBasis},
   ]]);
   if (release.privacy.length) sections.push(['Privacy provisions',release.privacy]);
   if (release.policy.length) sections.push(['Applicable policies',release.policy]);
@@ -249,7 +255,7 @@ function renderFindings(findings) {
 }
 function recordText(outcome) {
   const parts=['Release Process in Government | Working assessment record',new Date().toLocaleString('en-AU'),
-    outcome.title,outcome.description,'','Legislation and release basis'];
+    outcome.title,outcome.description,'','Department and underlying authority',...departmentRecord(getAnswers()),'','Legislation and release basis'];
   const sections=releaseSections(outcome.release);
   if (!sections.length) parts.push('No specific release basis has been identified from the answers so far.');
   for (const [label,items] of sections) {
@@ -297,6 +303,7 @@ function focusHeading(title,move) {
 }
 function renderAssessment(move=false) {
   question.replaceChildren();
+  get('authority-register').hidden=!['authorityCheck'].includes(activeStep);
   const st=getQuestion(activeStep);
   if (!st) {
     const out=result(activeStep,getAnswers());
@@ -320,6 +327,7 @@ function renderAssessment(move=false) {
         out.type==='hold'?'The provisions below identify the pathway considered. Your outcome is to hold the release.':'The provisions below identify a pathway for review before any release.',
     });
     question.append(element('p','step-label','Assessment outcome'),banner,basis);
+    const deptBlock=element('section','department-outcome');deptBlock.append(element('h3',null,'Department and underlying authority'));for(const line of departmentRecord(getAnswers()))deptBlock.append(element('p',null,line));question.append(deptBlock);
     if (out.findings.length) question.append(renderFindings(out.findings));
     question.append(detail,actions,status);
     renderProgress('Decision');
@@ -335,7 +343,7 @@ function renderAssessment(move=false) {
   fieldset.setAttribute('aria-labelledby',title.id);
   const continueButton=element('button','button primary','Continue');
   continueButton.type='submit';
-  continueButton.disabled=!previousChoice;
+  continueButton.disabled=!previousChoice||!getAnswers().department;
   for (const item of st.options) {
     const label=element('label','option');
     const input=element('input');
@@ -343,7 +351,7 @@ function renderAssessment(move=false) {
     input.name='choice';
     input.value=item.value;
     input.checked=item.value===previousChoice;
-    input.addEventListener('change',()=>{continueButton.disabled=false;syncPath(input.value);});
+    input.addEventListener('change',()=>{continueButton.disabled=!getAnswers().department;syncPath(input.value);});
     const detail=element('span');
     detail.append(element('strong',null,item.label));
     if (item.description) detail.append(element('small',null,item.description));
@@ -576,12 +584,13 @@ function hashRoute() {
   const treeTarget=current.startsWith('tree/')?decodeFragment(current.slice(5)):'';
   const referenceTarget=current.startsWith('reference/')?decodeFragment(current.slice(10)):'';
   const legacyReference=!!treeTarget&&!hasQuestionNode(treeTarget);
-  const presentMode=current==='reference'||current.startsWith('reference/')||legacyReference?'reference':
+  const presentMode=current==='departments'?'departments':current==='reference'||current.startsWith('reference/')||legacyReference?'reference':
     current==='tree'||current.startsWith('tree/')?'tree':'assessment';
   const oldMode=mode;
   mode=presentMode;
   for(const [view,tab,match] of [
     ['assessment-view','assessment-tab','assessment'],
+    ['departments-view','departments-tab','departments'],
     ['decision-view','tree-tab','tree'],
     ['reference-view','reference-tab','reference'],
   ]) {
@@ -610,6 +619,17 @@ document.addEventListener('click',event=>{
   else hashRoute();
 });
 window.addEventListener('hashchange',hashRoute);
+departmentUI=setupDepartments({getAnswers,onChange:(key,value)=>{
+  departmentAnswers[key]=value;
+  if(key==='department') {resetAssessment();return;}
+  if(key!=='authorityVerified'){
+    departmentAnswers.authorityVerified='no';get('authority-verified').checked=false;
+  }
+  // An authority edit invalidates any later approval and its recorded check.
+  const checkIndex=trail.findIndex(entry=>entry.step==='authorityCheck');
+  if(checkIndex>=0){activeStep='authorityCheck';previousChoice=null;trail.splice(checkIndex);renderAssessment();}
+  else {syncPath();}
+}});
 renderAssessment();
 hashRoute();
 

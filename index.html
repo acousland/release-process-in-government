@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="A working guide to Victorian information release decisions, with a guided assessment and a zoomable decision tree.">
 <title>Release Process in Government</title>
-<link rel="stylesheet" href="./site.css?v=20261123-tracker">
-<script src="./app.mjs?v=20261123-tracker" type="module"></script>
+<link rel="stylesheet" href="./site.css?v=20261123-departments">
+<script src="./app.mjs?v=20261123-departments" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -19,6 +19,7 @@
     </a>
     <nav class="top-nav" aria-label="Main navigation">
       <a href="#assessment" id="assessment-tab">Guided assessment</a>
+      <a href="#departments" id="departments-tab">Department authority</a>
       <a href="#tree" id="tree-tab">Decision tree</a>
       <a href="#reference" id="reference-tab">Legal reference</a>
     </nav>
@@ -31,8 +32,21 @@
       <div><p class="eyebrow">GUIDED ASSESSMENT</p><h1>Can we release this information?</h1><p>Start with every pathway open. As you answer, see which legislation and frameworks remain possible, and why others are ruled out.</p></div>
       <button type="button" id="toggle-path" class="button outline path-toggle" aria-controls="path-panel" aria-expanded="true">Hide decision path</button>
     </header>
+    <section class="card department-card" aria-labelledby="department-heading">
+      <div class="department-choice"><label id="department-heading" for="department">Which department is making this release?</label><select id="department"></select><p>Changing the department restarts the questionnaire and clears its authority record.</p></div>
+      <div id="department-profile" class="department-profile" aria-live="polite"></div>
+    </section>
     <div class="assessment-grid" id="assessment-grid">
       <section class="card question-card" aria-label="Assessment question">
+        <section id="authority-register" class="authority-register" hidden aria-labelledby="authority-heading">
+          <p class="eyebrow">UNDERLYING AUTHORITY RECORD</p><h2 id="authority-heading">What supports this particular activity?</h2>
+          <p>Establishment and portfolio legislation are starting points. Ask the information owner or legal team to identify the actual function and legal capacity. Keep personal or case details out.</p>
+          <label for="authorityFunction">Function and purpose of this activity</label><textarea id="authorityFunction" rows="2" maxlength="2000" placeholder="For example, the specific service, reporting, or planning function"></textarea>
+          <label for="authorityBasis">Exact Act and provision, or other legal capacity</label><textarea id="authorityBasis" rows="3" maxlength="3000" placeholder="Record the section, legal actor, and how it supports this activity and disclosure. For Crown capacity, record the responsible team’s written advice or existing authority."></textarea>
+          <label for="authorityRole">Authorised role and instrument</label><textarea id="authorityRole" rows="3" maxlength="3000" placeholder="Record the role, delegation or authorisation, entry, scope, conditions, and currency. Do not assume the Secretary’s power belongs to any employee."></textarea>
+          <label class="authority-confirm"><input type="checkbox" id="authority-verified"> The responsible team has checked these references and confirmed that they cover this exact activity and disclosure.</label>
+          <p class="source-note">This records your check. The tool does not verify internal delegations or legal advice.</p>
+        </section>
         <div id="question" aria-live="polite"></div>
       </section>
       <aside class="side-column" id="assessment-side" aria-label="Legislation, frameworks, and assessment progress" tabindex="0">
@@ -80,6 +94,18 @@
       </aside>
     </div>
   </section>
+  <section id="departments-view" hidden>
+    <header class="page-heading"><div><p class="eyebrow">DEPARTMENT AUTHORITY</p><h1>Trace the legal foundations</h1><p>A department’s existence, its portfolio responsibilities, and authority to disclose are separate questions. Follow each to the actual decision-maker.</p></div><a href="#assessment" class="button outline">Return to assessment</a></header>
+    <div class="foundation-grid">
+      <section class="card foundation-card"><label for="library-department">Explore a department</label><select id="library-department"></select><p class="source-note">Browsing this view does not change the department or answers in your assessment.</p><div id="foundation-profile"></div></section>
+      <section class="card foundation-card"><p class="eyebrow">COMMON LEGAL FRAMEWORK</p><h2>Establishment and machinery of government</h2><div id="foundation-laws"></div><article class="instrument"><h3>Authority for the actual release</h3><p>Identify the function, the legal actor, the exact power or legal capacity, any secrecy or source restriction, the privacy ground where needed, and the current delegation or authorisation. A General Order allocates administration to Ministers. It does not give every employee a disclosure power.</p><p>Department profiles do not establish that an office is a prescribed entity under CISS or FVISS, or that it meets another scheme’s eligibility rules.</p></article></section>
+    </div>
+    <section class="card legislation-card"><p class="eyebrow">PORTFOLIO LEGISLATION INDEX</p><h2>Find the underlying Acts and allocations</h2><p>Title index of the General Order effective 23 October 2026, covering all 60 ministerial portfolios. Entries can cover only part of an Act, or joint responsibilities. Open the linked PDF page and read the complete allocation, exceptions, and footnotes before using it.</p><p>Department starting points are navigation suggestions. The signed Order allocates responsibilities to ministerial portfolios, rather than assigning this list of whole Acts to a department. Check shared functions and later administrative arrangements orders.</p>
+      <div class="legislation-filters"><div><label for="legislation-search">Search Act title or portfolio</label><input type="search" id="legislation-search" placeholder="For example, Housing or Child Wellbeing"></div><div><label for="portfolio-filter">Portfolio filter</label><select id="portfolio-filter"></select></div></div>
+      <p id="legislation-count" role="status"></p><div id="allocation-sources" class="allocation-sources"></div><div id="legislation-results" class="legislation-results"></div>
+      <p class="source-note">This is an index of the Order, not an exhaustive register of every applicable law, subordinate instrument, agreement, delegation, or common law capacity. It does not test the disclosure provisions of every indexed Act. Existing sharing pathways remain in the live assessment panel.</p><p id="department-checked" class="source-note"></p>
+    </section>
+  </section>
   <section id="decision-view" hidden>
     <header class="page-heading tree-heading">
       <div><p class="eyebrow">DECISION TREE</p><h1>Follow the release questions</h1><p>The same questions and answers as the assessment. Choose a question to inspect its branches, or return to the form to record an answer.</p></div>
@@ -126,7 +152,7 @@
     </section>
   </section>
 </main>
-<footer class="shell footer"><p>Working decision aid based on Victorian rules checked 20 November 2026. Victorian Data Sharing Act pathways updated 23 November 2026.</p><a href="#reference">Legal reference</a></footer>
+<footer class="shell footer"><p>Working decision aid based on Victorian rules checked 20 November 2026. Department foundations, portfolio index, and sharing pathways updated 23 November 2026.</p><a href="#reference">Legal reference</a></footer>
 <noscript><div class="shell">JavaScript is needed for the guided assessment and map controls. <a href="./decision-tree.pdf">Open the underlying legal reference PDF</a>.</div></noscript>
 </body>
 </html>

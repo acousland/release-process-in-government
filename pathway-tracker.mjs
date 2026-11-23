@@ -1,4 +1,5 @@
-import {hasPersonal,hasHealth,isCdoRequest,identify} from './release-rules.mjs?v=20261123-tracker';
+import {ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
+import {hasPersonal,hasHealth,isCdoRequest,identify} from './release-rules.mjs?v=20261123-departments';
 
 // Evaluate from the current answers every time, so Back and Start again restore candidates.
 // A ruled-out disclosure pathway does not remove other duties under the same Act.
@@ -80,9 +81,9 @@ export function evaluatePathways(a={}) {
   specialist('youth','Youth Justice Act 2024',['youth'],'youth',['S5']);
   specialist('regulator','Social Services Regulation Act 2021',['regulator'],'regulator',['S6']);
   add('adoption','Adoption Act 1984 · adoption-record access','Disclosure pathways',a.request==='adoption'?relevant('You identified an adoption-record request. Use the specialist access process.','request'):known(a,'request')?out('This was not identified as an adoption-record access request. Restrictions on adoption information may still apply.','request'):open(),['S9']);
-  add('agency','Ordinary agency function','Disclosure pathways',
+  add('agency','Underlying agency function and legal authority','Disclosure pathways',
     a.departmentWork==='no'?out('You said sharing is not part of a function your agency is responsible for.','departmentWork'):
-    a.departmentWork==='yes'?relevant('The agency function was confirmed. Record the actual function and authority, and any separate privacy ground.','departmentWork'):open(),['I4','R1']);
+    a.departmentWork==='yes'?(ordinaryAuthorityComplete(a)&&a.authorityCheck==='yes'?relevant('You recorded the actual function, legal authority, and authorised role, and confirmed the responsible team’s check. Any separate privacy ground and release approval are still needed.','authorityCheck'):check('The agency function alone does not establish disclosure authority. Record and verify the actual legal basis and authorised role. A department establishment order or General Order is insufficient.','departmentWork')):open(),['I4','R1']);
 
   add('vps','Victorian Public Sector Data Sharing Policy','Frameworks and safeguards',
     known(a,'audience')&&a.audience!=='government'?out('The proposed recipient is not another Victorian government body.','audience'):

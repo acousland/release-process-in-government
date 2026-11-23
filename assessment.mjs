@@ -1,4 +1,5 @@
-import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs?v=20261123-tracker';
+import {ordinaryAuthorityComplete} from './department-data.mjs?v=20261123-departments';
+import {hasPersonal,hasHealth,missingPrivacy,identify,releaseDetails,isCdoRequest} from './release-rules.mjs?v=20261123-departments';
 
 export const stages=['Request','Information','Safeguards','Decision'];
 export const firstStep='audience';
@@ -166,7 +167,8 @@ export const steps={
   enforcement:ask(I,'Does a law enforcement agency need this information for a specific enforcement task?','For example, investigating an offence, enforcing criminal proceeds laws, protecting public revenue, addressing serious misconduct, or conducting court proceedings. Confirm the agency reasonably believes the disclosure is reasonably necessary for the specified task.',enforcementNext,'privacy-block'),
   healthconfidence:ask(I,'If a registered health practitioner is making the disclosure, can they do so without breaching confidence?','Answer Yes if this additional condition is satisfied or the discloser is not a registered health practitioner.',afterException,'privacy-block'),
   claim:ask(I,'Is this information necessary to establish, exercise, or defend the specific legal claim?','Confirm the claim and why this exact information is needed. A separate basis may be required for personal information outside the health information.',afterException,'privacy-block'),
-  departmentWork:ask(I,'Is this sharing part of a job your agency is responsible for?','For example, delivering a funded service, reporting on results, or doing work assigned to your agency. Be able to explain who needs the information and why.',policyCheck,'function-review','function-review'),
+  departmentWork:ask(I,'Is this sharing part of a job your agency is responsible for?','For example, delivering a funded service, reporting on results, or doing work assigned to your agency. A department’s establishment order does not by itself authorise the release.','authorityCheck','function-review','function-review'),
+  authorityCheck:ask(I,'Has the underlying authority for this activity and disclosure been identified and checked?','Complete the authority record above with the actual function, exact Act and provision or other legal capacity, and the authorised role and instrument. A department name, portfolio allocation, or yes answer alone is insufficient.',a=>ordinaryAuthorityComplete(a)?policyCheck(a):'function-review','function-review','function-review'),
   healthReason:options(I,'Why is the health information needed?', 'Choose the situation that best matches the actual disclosure.',[
     choice('management','Management, funding, planning, monitoring, evaluation, or qualifying staff training','This is about health services, or training provided by a health service provider to staff or people working with it.','healthServiceData'),
     choice('provider','Provide necessary care when the person cannot agree','The health service provider is currently providing care to the person.','provider'),
@@ -254,7 +256,7 @@ const messages={
   'privacy-block':['hold','A privacy condition has not been met','Hold the proposed version. The release needs a supported ground for every type of identifiable information, or a lawful narrower version.'],
   'source-hold':['hold','Hold until the source restriction is resolved','Ask the record owner or relevant specialist to confirm the permission in writing, or assess a version that excludes any protected material.'],
   'transfer-review':['refer','Confirm the transfer before release','Ask Privacy to review who will have access outside Victoria, the applicable transfer ground, and the safeguards.'],
-  'function-review':['refer','Confirm why the agency is sharing','Ask the record owner to confirm the departmental function and why the proposed recipient needs this information.'],
+  'function-review':['refer','Confirm why the agency is sharing','Record and verify the actual function, the Act and provision or other legal capacity, and the authorised role and instrument. Department establishment and allocation of portfolio legislation do not themselves establish authority for this disclosure.'],
   'arrangement-review':['refer','Confirm the sharing arrangements','Ask the information owner to identify any applicable MoU or data sharing agreement and confirm its conditions for this exact release. An agreement does not replace the legal basis.'],
   'safety-hold':['hold','Hold until the release is ready to send safely','Limit the version to what is needed and confirm the recipient, delivery channel, and safeguards.'],
 };
@@ -266,12 +268,13 @@ export function result(id,a) {
   const must= a.request==='order'||a.purpose==='placement'||
     (a.purpose==='child'&&a.childRecipient==='org'&&a.childRequest==='yes')||
     (a.purpose==='family'&&a.familyRecipient==='org'&&a.familyRequest==='yes');
+  if (['approved','ready'].includes(id)&&release.departmentFunction&&!release.authorityConfirmed) id='function-review';
   if (!['approved','ready'].includes(id)) {
     const [type,title,description]=messages[id]??messages.refer;
     return {type,title,description,findings,release};
   }
   if (!findings.some(finding=>finding.kind!=='policy')&&a.audience!=='public'&&a.information==='anonymous') {
-    findings.unshift({kind:'context',law:'Ordinary departmental sharing',provision:'Provisional basis: authority for the underlying departmental function',why:'The version was assessed as genuinely non-identifying. These answers do not establish a Victorian Data Sharing Act pathway or another standalone disclosure provision. Non-identifying data can still fall within a statutory Chief Data Officer request.',verify:'Confirm the function, requester, purpose, source restrictions, and approval before finalising the basis. If the requester or purpose changes, reassess the applicable pathway.',refs:['I4','R1','R2','V1','V2','V3']});
+    findings.unshift({kind:'context',law:'Recorded departmental function',provision:release.departmentBasis,why:'The version was assessed as genuinely non-identifying. These answers do not establish a Victorian Data Sharing Act pathway or another standalone disclosure provision. Non-identifying data can still fall within a statutory Chief Data Officer request.',verify:'Confirm the function, requester, purpose, source restrictions, and approval before finalising the basis. If the requester or purpose changes, reassess the applicable pathway.',refs:['I4','R1','R2','V1','V2','V3']});
   }
   if (id==='ready') {
     return {type:'refer',title:must?'Possible duty to disclose · confirmation pending':'Release pathway identified · approval pending',description:'Use the basis below to prepare the decision. Confirm who has authority and send them the exact version, recipient, and purpose for approval before release.',findings,release,approvalStatus:'pending'};
