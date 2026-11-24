@@ -103,7 +103,7 @@ export const acts = {
         check('Part 8, including s 201', 'Have applicable confidentiality notices and other restrictions been cleared?', 'Resolve the restriction before disclosure.'),
       ], 'May disclose under section 193(2)', 'Record the reason, scope, and protections.'),
     ]),
-  foi: act('Freedom of Information Act 1982', 'freedom-of-information-act-1982/115',
+  foi: act('Freedom of Information Act 1982', 'freedom-information-act-1982/115',
     'Formal access and other lawful access follow different processes.', [
       path('Formal access request', [
         check('ss 13, 17–21 and 26', 'Has the authorised FOI officer confirmed the request, the documents in scope, and that the Act applies?', 'Refer defects, exclusions, transfers, or scope issues to the FOI team.'),

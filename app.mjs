@@ -1,4 +1,4 @@
-import {setupLegislationFlowcharts} from './legislation-flowcharts/flowcharts.mjs';
+import {setupLegislationFlowcharts} from './legislation-flowcharts/flowcharts.mjs?v=2';
 import {setupDepartments} from './department-ui.mjs?v=20261123-logic';
 import {departmentRecord} from './department-data.mjs?v=20261123-logic';
 import tree from './tree-data.mjs?v=20261123-logic';

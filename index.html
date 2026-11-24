@@ -7,8 +7,8 @@
 <meta name="description" content="A working guide to Victorian information release decisions, with a guided assessment and a zoomable decision tree.">
 <title>Release Process in Government</title>
 <link rel="stylesheet" href="./site.css?v=20261125-flowcharts">
-<link rel="stylesheet" href="./legislation-flowcharts/flowcharts.css">
-<script src="./app.mjs?v=20261125-flowcharts" type="module"></script>
+<link rel="stylesheet" href="./legislation-flowcharts/flowcharts.css?v=2">
+<script src="./app.mjs?v=20261125-provisions" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -125,7 +125,7 @@
   </section>
   <section id="legislation-view" hidden>
     <header class="page-heading">
-      <div><h1>Legislation release flowcharts</h1></div>
+      <div><h1>Legislation release flowcharts</h1><p>Select an Act, then open any decision to read the provisions behind it.</p></div>
     </header>
     <div class="flowchart-picker">
       <div><label for="flowchart-act">Select an Act</label><select id="flowchart-act"></select></div>
@@ -137,6 +137,19 @@
       <p class="sr-only" role="status" id="flowchart-status"></p>
       <div class="act-routes" id="flowchart-routes"></div>
     </section>
+    <dialog class="act-provision-dialog" id="flowchart-provisions" aria-labelledby="provision-dialog-title">
+      <header class="act-provision-header">
+        <div>
+          <p class="act-provision-law" id="provision-dialog-law"></p>
+          <h2 id="provision-dialog-title">Legislative provisions</h2>
+        </div>
+        <form method="dialog"><button class="button outline" autofocus>Close</button></form>
+      </header>
+      <div class="act-provision-body">
+        <p class="act-provision-question" id="provision-dialog-question"></p>
+        <div id="provision-dialog-list"></div>
+      </div>
+    </dialog>
     <p class="flowchart-scope">These charts cover selected provisions. Check applicable restrictions and the decision-maker’s authority for the exact recipient, purpose, and information before release.</p>
   </section>
   <section id="reference-view" hidden>
