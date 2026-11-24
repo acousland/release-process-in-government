@@ -1,3 +1,4 @@
+import {setupLegislationFlowcharts} from './legislation-flowcharts/flowcharts.mjs';
 import {setupDepartments} from './department-ui.mjs?v=20261123-logic';
 import {departmentRecord} from './department-data.mjs?v=20261123-logic';
 import tree from './tree-data.mjs?v=20261123-logic';
@@ -584,14 +585,17 @@ document.addEventListener('pointerdown',e=>{if (!e.target.closest('.map-search')
 function decodeFragment(value) {
   try { return decodeURIComponent(value); } catch { return ''; }
 }
+const showLegislationFlowchart = setupLegislationFlowcharts();
 let mode='assessment';
 function hashRoute() {
   const current=location.hash.slice(1);
   if (current==='main') return;
   const treeTarget=current.startsWith('tree/')?decodeFragment(current.slice(5)):'';
   const referenceTarget=current.startsWith('reference/')?decodeFragment(current.slice(10)):'';
+  const legislationAct=current.startsWith('legislation/')?decodeFragment(current.slice(12)):'';
   const legacyReference=!!treeTarget&&!hasQuestionNode(treeTarget);
-  const presentMode=current==='departments'?'departments':current==='reference'||current.startsWith('reference/')||legacyReference?'reference':
+  const presentMode=current==='departments'?'departments':
+    current==='legislation'||current.startsWith('legislation/')?'legislation':current==='reference'||current.startsWith('reference/')||legacyReference?'reference':
     current==='tree'||current.startsWith('tree/')?'tree':'assessment';
   const oldMode=mode;
   mode=presentMode;
@@ -600,6 +604,7 @@ function hashRoute() {
     ['departments-view','departments-tab','departments'],
     ['decision-view','tree-tab','tree'],
     ['reference-view','reference-tab','reference'],
+    ['legislation-view','legislation-tab','legislation'],
   ]) {
     const selected=mode===match;
     get(view).hidden=!selected;
@@ -615,6 +620,7 @@ function hashRoute() {
       if(pendingTarget)goTo(pendingTarget);else fit();
     });
   }
+  if(mode==='legislation')showLegislationFlowchart(legislationAct);
   if(mode==='tree')showQuestionMap(pathFrame(),treeTarget);
   if(oldMode!==mode) window.scrollTo(0,0);
 }

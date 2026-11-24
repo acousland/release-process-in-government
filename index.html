@@ -6,8 +6,9 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="A working guide to Victorian information release decisions, with a guided assessment and a zoomable decision tree.">
 <title>Release Process in Government</title>
-<link rel="stylesheet" href="./site.css?v=20261123-logic">
-<script src="./app.mjs?v=20261123-logic" type="module"></script>
+<link rel="stylesheet" href="./site.css?v=20261125-flowcharts">
+<link rel="stylesheet" href="./legislation-flowcharts/flowcharts.css">
+<script src="./app.mjs?v=20261125-flowcharts" type="module"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -21,6 +22,7 @@
       <a href="#assessment" id="assessment-tab">Guided assessment</a>
       <a href="#departments" id="departments-tab">Department authority</a>
       <a href="#tree" id="tree-tab">Decision tree</a>
+      <a href="#legislation" id="legislation-tab">Legislation flowcharts</a>
       <a href="#reference" id="reference-tab">Legal reference</a>
     </nav>
     <span class="top-draft">Working draft</span>
@@ -120,6 +122,22 @@
       </section>
       <aside class="card node-detail" id="question-detail" aria-label="Branch details" aria-live="polite"></aside>
     </div>
+  </section>
+  <section id="legislation-view" hidden>
+    <header class="page-heading">
+      <div><h1>Legislation release flowcharts</h1></div>
+    </header>
+    <div class="flowchart-picker">
+      <div><label for="flowchart-act">Select an Act</label><select id="flowchart-act"></select></div>
+      <a id="flowchart-source" class="button outline" href="https://www.legislation.vic.gov.au/in-force">Read the Act</a>
+    </div>
+    <section aria-labelledby="flowchart-title">
+      <h2 id="flowchart-title"></h2>
+      <p class="flowchart-note" id="flowchart-note"></p>
+      <p class="sr-only" role="status" id="flowchart-status"></p>
+      <div class="act-routes" id="flowchart-routes"></div>
+    </section>
+    <p class="flowchart-scope">These charts cover selected provisions. Check applicable restrictions and the decision-maker’s authority for the exact recipient, purpose, and information before release.</p>
   </section>
   <section id="reference-view" hidden>
     <header class="page-heading tree-heading">
